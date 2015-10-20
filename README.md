@@ -1,1 +1,4 @@
-# Untitled-CSET1100-Project
+# Untitled-CSET1100-Project (name subject to change)
+
+This is a basic "Brick Attack" game written by Pete Hopkins, Salma Mansour, and Matt Armand to meet the project requirement of CSET1100 at the University of Toledo.
+

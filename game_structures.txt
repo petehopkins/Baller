@@ -1,0 +1,48 @@
+# How to read this document:
+#    Names that are in PascalCase (aka TitleCase) are classes
+#    Names that are in camelCase are class properties
+#    Names that are in camelCase followed by a pair of parentheses--i.e., camelCase()--are class methods
+#
+# Also, as in Python, indentation counts! :)
+# Anything that is indented is a property / method / class of the previous level.
+#
+# Any changes made to this document should reflect these conventions
+
+Game
+    Level
+        currentStage
+        bricks
+            Brick
+                color
+                hitsRemaining
+                position
+                size
+                break()
+                __animate()
+            Ball
+                position
+                speed
+                size
+                trajectory
+                __bounce()
+                __die()
+                move()
+            Paddle
+                position
+                move()
+            Borders
+                Border
+                    position
+        bricksRemaining
+        __init__(currentStage)
+    score
+    title
+    highScores
+    livesRemaining
+    Settings
+        horizontalSensitivity
+        difficulty
+            initialBallSpeed
+            initialBallSize
+            paddleSize
+

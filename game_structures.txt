@@ -17,7 +17,7 @@ Game
                 hitsRemaining
                 position
                 size
-                break()
+                collide()
                 __animate()
         Ball
             position

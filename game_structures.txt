@@ -19,20 +19,20 @@ Game
                 size
                 break()
                 __animate()
-            Ball
+        Ball
+            position
+            speed
+            size
+            trajectory
+            __bounce()
+            __die()
+            move()
+        Paddle
+            position
+            move()
+        Borders
+            Border
                 position
-                speed
-                size
-                trajectory
-                __bounce()
-                __die()
-                move()
-            Paddle
-                position
-                move()
-            Borders
-                Border
-                    position
         bricksRemaining
         __init__(currentStage)
     score

@@ -18,6 +18,5 @@ class Paddle(pygame.sprite.Sprite):
     def move(self, x):
         self.rect.x = x
 
-    def drawPaddle(self, window):
-        window.blit(self)
-
+    def draw(self, window):
+        window.blit(self.image, self.image.get_rect())

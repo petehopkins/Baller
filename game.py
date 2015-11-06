@@ -17,6 +17,13 @@ class Game(Engine):
         self.eventManager = EventManager()
         self.ticker = Engine.Ticker(self.eventManager, self)
 
+        event = Events.ShowOptionsEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.NewGameEvent()
+        self.eventManager.addListener(event, self)
+        
+
 ##    def makeWallOBricks(self):
 ##        self.window.fill(self.windowFillColor)
 ##        wall = Bricks(self.window, 8)
@@ -38,6 +45,11 @@ class Game(Engine):
         event = Events.QuitEvent()
         self.eventManager.post(event)
 
+    def makeLevel(self):
+        screen = Engine.Layer()
+
+        return screen
+    
     def makeOptions(self):
         screen = Engine.Layer()
 
@@ -46,11 +58,15 @@ class Game(Engine):
         title.setPosition(y = 100)
         screen.addWidget(title)
 
+        sensitivity = Label(self.eventManager, "Sensitivity", self.Colors.BLACK)
+        sensitivity.setPosition(50, 200)
+        screen.addWidget(sensitivity)
+
         difficulty = Label(self.eventManager, "Difficulty", self.Colors.BLACK)
         difficulty.setPosition(50, 300)
         screen.addWidget(difficulty)
 
-        saveButton = Button(self.eventManager, "Save", buttonColor = self.Colors.GREY)
+        saveButton = Button(self.eventManager, "Set Options", buttonColor = self.Colors.GREY)
         saveButton.setPosition(50, 400)
         screen.addWidget(saveButton)
 
@@ -83,32 +99,34 @@ class Game(Engine):
 
         return screen
 
-    def showScreen(self, screen):
+    def showScreen(self, screenName):
+        screen = self.screens[screenName]
+        
+        self.screens[self.activeScreen].deactivate()
+        self.activeScreen = screenName
+
         self.window.fill(self.windowFillColor)
         screen.addWidgetListeners()
         screen.redrawWidgets(self.window)
 
     def notify(self, event):
         if isinstance(event, Events.ShowOptionsEvent):
-            self.screens[self.activeScreen].deactivate()
-            self.activeScreen = "options"
-            self.showScreen(self.screens[self.activeScreen])
+            self.showScreen("options")
+
+        if isinstance(event, Events.NewGameEvent):
+            self.showScreen("level")
 
     @staticmethod
     def launch():
         game = Game()
 
-        event = Events.ShowOptionsEvent()
-        game.eventManager.addListener(event, game)
+        game.screens["start"] = game.makeStart()
+        game.screens["options"] = game.makeOptions()
+        game.screens["level"] = game.makeLevel()
 
-        screen =game.makeStart()
-        game.screens["start"] = screen
         game.activeScreen = "start"
-
-        screen = game.makeOptions()
-        game.screens["options"] = screen
-
-        game.showScreen(game.screens[game.activeScreen])
+        
+        game.showScreen(game.activeScreen)
         game.eventManager.processEvents()
 
 Game.launch()

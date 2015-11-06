@@ -30,9 +30,10 @@ class Engine():
 
             def removeListeners(self):
                 listeners = self.eventManager.getListeners()
-                for event in listeners[self]:
-                    e = Events.getEvent(event)
-                    self.eventManager.removeListener(e, self)
+                if self in listeners.keys():
+                    for event in listeners[self]:
+                        e = Events.getEvent(event)
+                        self.eventManager.removeListener(e, self)
 
             def notify(self, event):
                 print("Abstract Class not implemented. Triggering event:", event.name)

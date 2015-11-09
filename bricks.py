@@ -4,17 +4,17 @@ from brick import *
 class Bricks():
     __pile = []
 
-    def __init__(self, stage, gap = 2):
+    def __init__(self, window, gap = 2):
         self.__pile = pygame.sprite.Group()
-        self.createWall(stage, gap)
+        self.createWall(window, gap)
 
     def getPile(self):
         return self.__pile
 
-    def createWall(self, stage, gap):
+    def createWall(self, window, gap):
         brick = Brick([0,0])
-        availableWidth = stage.get_width()
-        availableHeight = stage.get_height() - 200 #allocate 200px on bottom for paddle and manuevering space
+        availableWidth = window.get_width()
+        availableHeight = window.get_height() - 200 #allocate 200px on bottom for paddle and maneuvering space
 
         ballparkWide = availableWidth // brick.getWidth()
         ballparkHigh = availableHeight // brick.getHeight()
@@ -36,5 +36,5 @@ class Bricks():
                 self.__pile.add(brick)
         
         
-    def redrawWall(self, stage):
-        self.__pile.draw(stage)
+    def redrawWall(self, window):
+        self.__pile.draw(window)

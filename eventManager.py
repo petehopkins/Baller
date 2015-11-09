@@ -39,6 +39,13 @@ class Events():
             self.name = "Show Options Event"
             super().__init__()
 
+    class CollisionEvent(Event):
+        """..."""
+        def __init__(self, obj):
+            self.name = "Collision Event"
+            self.obj = obj
+            super().__init__()
+
     class HoverWidgetEvent(Event):
         """..."""
         def __init__(self, pos = None):
@@ -52,7 +59,7 @@ class Events():
             self.name = "Keyboard Activate Widget Event"
             self.widget = widget
             super().__init__()
-
+	
     class LeftClickWidgetEvent(Event):
         """..."""
         def __init__(self, pos = None):

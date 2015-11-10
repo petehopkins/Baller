@@ -4,12 +4,12 @@
 
 # Requires pygame
 import pygame
+from engine import Engine
+from eventManager import Events
 
-class Brick(pygame.sprite.Sprite):
-    def __init__(self, eventManager, position, fill = None, border = None):
-        from game import Engine
-
-        super().__init__()
+class Brick(Engine.GUI.Widget):
+    def __init__(self, eventManager, position, fill = None, border = None, container = None):
+        super().__init__(eventManager, container)
 
         self.eventManager = eventManager
 
@@ -49,15 +49,14 @@ class Brick(pygame.sprite.Sprite):
         self.image.blit(self.inner, self.innerRect)
 
     def notify(self, event):
-        if isinstance(event, CollisionEvent):
+        if isinstance(event, Events.CollisionEvent):
             if event.obj == self:
                 self.collide()
 
     def addListeners(self):
-        pass
+        event = Events.CollisionEvent()
+        self.eventManager.addListener(event, self)
 
-    def removeListeners(self):
-        pass
 
     def update(self):
         pass
@@ -79,6 +78,6 @@ class Brick(pygame.sprite.Sprite):
         self.hitsRemaining -= 1 #decrement hits
         self.animate() #and animate the hit
 
-    def stack(self, window):
-        if self.isInPlay:
-           window.blit(self.image, self.rect) #draw border
+##    def stack(self, window):
+##        if self.isInPlay:
+##           window.blit(self.image, self.rect) #draw border

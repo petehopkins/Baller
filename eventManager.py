@@ -53,13 +53,20 @@ class Events():
             self.pos = pos
             super().__init__()
 
+    class DragWidgetEvent(Event):
+        """..."""
+        def __init__(self, pos = None):
+            self.name = "Widget Mouse Drag Event"
+            self.pos = pos
+            super().__init__()
+
     class KeyboardActivateWidgetEvent(Event):
         """..."""
         def __init__(self, widget):
             self.name = "Keyboard Activate Widget Event"
             self.widget = widget
             super().__init__()
-	
+
     class LeftClickWidgetEvent(Event):
         """..."""
         def __init__(self, pos = None):
@@ -143,7 +150,6 @@ class EventManager:
 
 
                 if e.type == pygame.MOUSEBUTTONUP:
-                    print(e.button)
                     if e.button == 1:
                         event = Events.LeftClickWidgetEvent(e.pos)
                         self.post(event)

@@ -41,7 +41,7 @@ class Events():
 
     class CollisionEvent(Event):
         """..."""
-        def __init__(self, obj):
+        def __init__(self, obj = None):
             self.name = "Collision Event"
             self.obj = obj
             super().__init__()

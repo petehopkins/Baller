@@ -19,6 +19,24 @@ class Engine():
                 self.focused = False
                 self.dirty = True
 
+            def setPosition(self, x = None, y = None):
+                if x or y:
+                    self.dirty = True
+
+                    if x:
+                        self.rect.x = x
+
+                    if y:
+                        self.rect.y = y
+
+                    self.update()
+
+            def centerOn(self, surf):
+                surfRect = surf.get_rect()
+                onX = surfRect.x + (surfRect.width / 2) - (self.rect.width / 2)
+                onY = surfRect.y + (surfRect.height / 2) - (self.rect.height / 2)
+                self.setPosition(onX, onY)
+
             def setFocus(self, val):
                 self.focused = val
                 self.dirty = True
@@ -41,8 +59,9 @@ class Engine():
     class Layer():
         def __init__(self):
             self.widgets = []
-            self.activate = self.addWidgetListeners
-            self.deactivate = self.removeWidgetListeners
+            self.sprites = pygame.sprite.Group()
+            self.activate = self.addListeners
+            self.deactivate = self.removeListeners
 
         def addWidget(self, widget):
             self.widgets.append(widget)
@@ -60,13 +79,41 @@ class Engine():
                 widget.removeListeners()
                 self.widgets.remove(widget)
 
+        def addSprite(self, sprite):
+            self.sprites.add(sprite)
+
+        def addSpriteListeners(self):
+            for sprite in self.sprites:
+                sprite.addListeners()
+
+        def removeSpriteListeners(self):
+            for sprite in self.sprites:
+                sprite.removeListeners()
+
+        def removeSprite(self, sprite):
+            self.sprites.remove(sprite)
+
         def getWidgets(self):
             return self.widgets
+
+        def getSprites(self):
+            return self.sprites
 
         def redrawWidgets(self, window):
             for widget in self.widgets:
                 widget.update()
                 window.blit(widget.widget, widget.widget.get_rect(x = widget.rect.x, y = widget.rect.y))
+
+        def redrawSprites(self, window):
+            self.sprites.draw(window)
+
+        def addListeners(self):
+            self.addWidgetListeners()
+            self.addSpriteListeners()
+
+        def removeListeners(self):
+            self.removeWidgetListeners()
+            self.removeSpriteListeners()
 
     class Ticker():
         def __init__(self, eventManager, engine):
@@ -82,7 +129,6 @@ class Engine():
         def notify(self, event):
             if isinstance(event, Events.QuitEvent):
                 self.eventManager.running = False
-                self.engine.end()
 
             if isinstance(event, Events.TickEvent):
                 self.engine.clock.tick(self.engine.tickSpeed)
@@ -92,6 +138,7 @@ class Engine():
     def redrawWindow(self):
         screen = self.screens[self.activeScreen]
         screen.redrawWidgets(self.window)
+        screen.redrawSprites(self.window)
 
     def end(self):
         self.eventManager.running = False

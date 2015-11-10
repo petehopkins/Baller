@@ -58,13 +58,13 @@ class Engine():
 
     class Layer():
         def __init__(self):
-            self.widgets = []
+            self.widgets = pygame.sprite.Group()
             self.sprites = pygame.sprite.Group()
             self.activate = self.addListeners
             self.deactivate = self.removeListeners
 
         def addWidget(self, widget):
-            self.widgets.append(widget)
+            self.widgets.add(widget)#append
 
         def addWidgetListeners(self):
             for widget in self.widgets:
@@ -100,11 +100,14 @@ class Engine():
             return self.sprites
 
         def redrawWidgets(self, window):
-            for widget in self.widgets:
-                widget.update()
-                window.blit(widget.widget, widget.widget.get_rect(x = widget.rect.x, y = widget.rect.y))
+##            for widget in self.widgets:
+##                widget.update()
+##                window.blit(widget.widget, widget.rect) #widget.widget.get_rect(x = widget.rect.x, y = widget.rect.y)
+            self.widgets.update()
+            self.widgets.draw(window)
 
         def redrawSprites(self, window):
+            self.sprites.update()
             self.sprites.draw(window)
 
         def addListeners(self):
@@ -137,6 +140,7 @@ class Engine():
 
     def redrawWindow(self):
         screen = self.screens[self.activeScreen]
+        self.window.fill(self.windowFillColor)
         screen.redrawWidgets(self.window)
         screen.redrawSprites(self.window)
 

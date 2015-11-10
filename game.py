@@ -22,13 +22,6 @@ class Game(Engine):
 
         event = Events.NewGameEvent()
         self.eventManager.addListener(event, self)
-        
-
-##    def makeWallOBricks(self):
-##        self.window.fill(self.windowFillColor)
-##        wall = Bricks(self.window, 8)
-##        wall.redrawWall(self.window)
-##        return True
 
     def showSplash(self):
         pass
@@ -48,8 +41,11 @@ class Game(Engine):
     def makeLevel(self):
         screen = Engine.Layer()
 
+        wall = Bricks(self.eventManager, self.window)
+        screen.addSprite(wall.getPile().sprites())
+
         return screen
-    
+
     def makeOptions(self):
         screen = Engine.Layer()
 
@@ -58,20 +54,28 @@ class Game(Engine):
         title.setPosition(y = 100)
         screen.addWidget(title)
 
-        sensitivity = Label(self.eventManager, "Sensitivity", self.Colors.BLACK)
-        sensitivity.setPosition(50, 200)
+        sensitivityLabel = Label(self.eventManager, "Sensitivity", self.Colors.BLACK)
+        sensitivityLabel.setPosition(50, 200)
+        screen.addWidget(sensitivityLabel)
+
+        sensitivity = SliderWidget(self.eventManager, range(0, 100), 0)
+        sensitivity.setPosition(550, sensitivityLabel.rect.y + 20)
         screen.addWidget(sensitivity)
 
-        difficulty = Label(self.eventManager, "Difficulty", self.Colors.BLACK)
-        difficulty.setPosition(50, 300)
+        difficultyLabel = Label(self.eventManager, "Difficulty", self.Colors.BLACK)
+        difficultyLabel.setPosition(50, 300)
+        screen.addWidget(difficultyLabel)
+
+        difficulty = SliderWidget(self.eventManager, [0,1,2,3,4], 0)
+        difficulty.setPosition(550, difficultyLabel.rect.y + 20)
         screen.addWidget(difficulty)
 
         saveButton = Button(self.eventManager, "Set Options", buttonColor = self.Colors.GREY)
-        saveButton.setPosition(50, 400)
+        saveButton.setPosition(50, 500)
         screen.addWidget(saveButton)
 
         cancelButton = Button(self.eventManager, "Cancel", buttonColor = self.Colors.LAVENDER)
-        cancelButton.setPosition(625, 400)
+        cancelButton.setPosition(575, 500)
         screen.addWidget(cancelButton)
 
         return screen
@@ -101,13 +105,15 @@ class Game(Engine):
 
     def showScreen(self, screenName):
         screen = self.screens[screenName]
-        
+
         self.screens[self.activeScreen].deactivate()
         self.activeScreen = screenName
 
         self.window.fill(self.windowFillColor)
         screen.addWidgetListeners()
         screen.redrawWidgets(self.window)
+        screen.addSpriteListeners()
+        screen.redrawSprites(self.window)
 
     def notify(self, event):
         if isinstance(event, Events.ShowOptionsEvent):
@@ -125,8 +131,9 @@ class Game(Engine):
         game.screens["level"] = game.makeLevel()
 
         game.activeScreen = "start"
-        
+
         game.showScreen(game.activeScreen)
         game.eventManager.processEvents()
+        game.end()
 
 Game.launch()

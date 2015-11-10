@@ -40,6 +40,9 @@ class HoverableWidget(Engine.GUI.Widget):
         else:
             self.onHoverAction = self.changeBackground
 
+    def get_rect(self):
+        return self.rect
+
     def addListeners(self):
         event = Events.HoverWidgetEvent()
         self.eventManager.addListener(event, self)
@@ -83,23 +86,6 @@ class HoverableWidget(Engine.GUI.Widget):
             rgb = (r, g, b)
 
         return rgb
-
-    def setPosition(self, x = None, y = None):
-        if x or y:
-            self.dirty = True
-
-            if x:
-                self.rect.x = x
-
-            if y:
-                self.rect.y = y
-
-            self.update()
-
-    def centerOn(self, surf):
-        onX = (surf.get_rect().width / 2) - (self.rect.width / 2)
-        onY = (surf.get_rect().height / 2) - (self.rect.height / 2)
-        self.setPosition(onX, onY)
 
     def changeBackground(self):
         self.dirty = True
@@ -159,3 +145,87 @@ class Button(HoverableWidget):
         elif isinstance(event, Events.KeyboardActivateWidgetEvent) and self.focused:
             self.click()
 
+class SliderWidget(Engine.GUI.Widget):
+    def __init__(self, eventManager, values, defaultValue, textColor = None, backgroundColor = None, container = None, onDragAction = None):
+        super().__init__(eventManager, container)
+
+        self.eventManager = eventManager
+
+        if textColor:
+            self.textColor = textColor
+        else:
+            self.textColor = Engine.Colors.BLACK
+
+        if backgroundColor == None:
+            backgroundColor = (255, 255, 255, 0)
+
+        self.backgroundColor = backgroundColor
+        self.width = 200
+        self.height = 72
+
+        self.font = pygame.font.Font(None, 24)
+        self.values = values
+        self.step = self.width / len(values)
+        self.value = str(defaultValue)
+
+        if onDragAction:
+            self.onDragAction = onDragAction
+        else:
+            self.onDragAction = self.changeValue
+
+        self.widget = pygame.Surface((200, 72)) #contains bar, box and text; defined here for initial positioning
+        self.rect = self.widget.get_rect()
+
+    def addListeners(self):
+        event = Events.DragWidgetEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.LeftClickWidgetEvent()
+        self.eventManager.addListener(event, self)
+
+    def redrawWidget(self):
+        self.dirty = True
+
+        self.widget = pygame.Surface((200, 72)) #contains bar, box and text
+        self.widget.fill(self.backgroundColor)
+        #self.rect = self.widget.get_rect()
+
+        self.bar = pygame.Surface((200, 10))
+        self.bar.fill(Engine.Colors.GREY)
+        self.barRect = self.bar.get_rect()
+        self.barRect.x = 0
+        self.barRect.y = 15
+
+        self.box = pygame.Surface((10, 40))
+        self.box.fill(Engine.Colors.GREY)
+        self.boxRect = self.box.get_rect()
+
+        self.renderedText = self.font.render(self.value, True, self.textColor, self.backgroundColor)
+        self.textRect = self.renderedText.get_rect()
+        self.textRect.x = (self.widget.get_rect().width / 2) - (self.textRect.width / 2)
+        self.textRect.y = self.widget.get_rect().height - 8 - self.textRect.height
+
+        self.widget.blit(self.bar, self.barRect)
+        self.widget.blit(self.box, self.boxRect)
+        self.widget.blit(self.renderedText, self.textRect)
+
+    def update(self):
+        if self.dirty:
+            self.redrawWidget()
+            self.dirty = False
+
+    def drag(self, pos):
+        if self.onDragAction:
+            self.dirty = True
+            self.onDragAction(pos)
+            self.update()
+
+    def changeValue(self, pos):
+        dx = pos[0]
+
+    def notify(self, event):
+        if isinstance(event, Events.DragWidgetEvent) and self.rect.collidepoint(event.pos):
+            self.drag(event.pos)
+
+        if isinstance(event, Events.LeftClickWidgetEvent) and self.rect.collidepoint(event.pos):
+            self.drag(event.pos)

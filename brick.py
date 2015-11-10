@@ -6,21 +6,21 @@
 import pygame
 
 class Brick(pygame.sprite.Sprite):
-    def init(self, eventManager, position, fill = None, border = None):
-        from Game import Engine
+    def __init__(self, eventManager, position, fill = None, border = None):
+        from game import Engine
 
-        super().init()
-        
+        super().__init__()
+
         self.eventManager = eventManager
-        
+
         self.borderWidth = 2
         self.hitsRemaining = 1
         self.x = position[0]
         self.y = position[1]
         self.size = 25
         self.whRatio = {"width": 2, "height": 1}
-        self.width = size * whRatio["width"]
-        self.height = size * whRatio["height"]
+        self.width = self.size * self.whRatio["width"]
+        self.height = self.size * self.whRatio["height"]
         self.hitsRemaining = 1
         self.isInPlay = True
 
@@ -34,24 +34,30 @@ class Brick(pygame.sprite.Sprite):
         else:
             self.border = Engine.Colors.BLACK
 
-        self.brick = pygame.Surface((self.width, self.height))
-        self.brickRect = self.brick.get_rect()
-        self.brickRect.x = self.x
-        self.brickRect.y = self.y
-        self.brick.fill(self.border)
-        
+        self.image = pygame.Surface((self.width, self.height))
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        self.image.fill(self.border)
+
         self.inner = pygame.Surface((self.width - (self.borderWidth * 2), self.height - (self.borderWidth * 2)))
         self.innerRect = self.inner.get_rect()
-        self.innerRect.x = (self.brickRect.width / 2) - (self.innerRect.width / 2)
-        self.innerRect.y = (self.brickRect.height / 2) - (self.innerRect.height / 2)
+        self.innerRect.x = (self.rect.width / 2) - (self.innerRect.width / 2)
+        self.innerRect.y = (self.rect.height / 2) - (self.innerRect.height / 2)
         self.inner.fill(self.fill)
 
-        self.brick.blit(self.inner, self.innerRect)
-    
+        self.image.blit(self.inner, self.innerRect)
+
     def notify(self, event):
         if isinstance(event, CollisionEvent):
             if event.obj == self:
                 self.collide()
+
+    def addListeners(self):
+        pass
+
+    def removeListeners(self):
+        pass
 
     def update(self):
         pass
@@ -75,4 +81,4 @@ class Brick(pygame.sprite.Sprite):
 
     def stack(self, window):
         if self.isInPlay:
-           window.blit(self.brick, self.rect) #draw border
+           window.blit(self.image, self.rect) #draw border

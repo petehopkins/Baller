@@ -71,13 +71,14 @@ class Brick(Engine.GUI.Widget):
         self.isInPlay = False #set flag
 
     def animate(self):
-        if self.hitsRemaining <= 0:
+        if self.hitsRemaining == 1:
+            self.fill = Engine.Colors.LAVENDER
+        elif self.hitsRemaining == 0:
+            self.fill = Engine.Colors.GREY
+        else:
+            self.fill = Engine.Colors.BLACK
             self.removeFromPlay() #no hits remaining, get rid of this one
 
     def collide(self):
         self.hitsRemaining -= 1 #decrement hits
         self.animate() #and animate the hit
-
-##    def stack(self, window):
-##        if self.isInPlay:
-##           window.blit(self.image, self.rect) #draw border

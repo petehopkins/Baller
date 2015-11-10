@@ -49,8 +49,8 @@ class HoverableWidget(Engine.GUI.Widget):
 
     def redrawWidget(self):
         self.dirty = True
-        self.widget = pygame.Surface((self.width, self.height))
-        self.widget.fill(self.backgroundColor)
+        self.image = pygame.Surface((self.width, self.height))
+        self.image.fill(self.backgroundColor)
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()
@@ -58,7 +58,7 @@ class HoverableWidget(Engine.GUI.Widget):
         self.textRect.x = (self.width / 2) - (self.textRect.width / 2)
         self.textRect.y = (self.height / 2) - (self.textRect.height / 2)
 
-        self.widget.blit(self.renderedText, self.textRect)
+        self.image.blit(self.renderedText, self.textRect)
 
     def getContrastingShade(self, color):
         constrastingShadeOffset = .2 * 255
@@ -173,8 +173,8 @@ class SliderWidget(Engine.GUI.Widget):
         else:
             self.onDragAction = self.changeValue
 
-        self.widget = pygame.Surface((200, 72)) #contains bar, box and text; defined here for initial positioning
-        self.rect = self.widget.get_rect()
+        self.image = pygame.Surface((200, 72)) #contains bar, box and text; defined here for initial positioning
+        self.rect = self.image.get_rect()
 
     def addListeners(self):
         event = Events.DragWidgetEvent()
@@ -186,9 +186,9 @@ class SliderWidget(Engine.GUI.Widget):
     def redrawWidget(self):
         self.dirty = True
 
-        self.widget = pygame.Surface((200, 72)) #contains bar, box and text
-        self.widget.fill(self.backgroundColor)
-        #self.rect = self.widget.get_rect()
+        self.image = pygame.Surface((200, 72)) #contains bar, box and text
+        self.image.fill(self.backgroundColor)
+        #self.rect = self.image.get_rect()
 
         self.bar = pygame.Surface((200, 10))
         self.bar.fill(Engine.Colors.GREY)
@@ -202,12 +202,12 @@ class SliderWidget(Engine.GUI.Widget):
 
         self.renderedText = self.font.render(self.value, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()
-        self.textRect.x = (self.widget.get_rect().width / 2) - (self.textRect.width / 2)
-        self.textRect.y = self.widget.get_rect().height - 8 - self.textRect.height
+        self.textRect.x = (self.image.get_rect().width / 2) - (self.textRect.width / 2)
+        self.textRect.y = self.image.get_rect().height - 8 - self.textRect.height
 
-        self.widget.blit(self.bar, self.barRect)
-        self.widget.blit(self.box, self.boxRect)
-        self.widget.blit(self.renderedText, self.textRect)
+        self.image.blit(self.bar, self.barRect)
+        self.image.blit(self.box, self.boxRect)
+        self.image.blit(self.renderedText, self.textRect)
 
     def update(self):
         if self.dirty:

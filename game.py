@@ -10,6 +10,7 @@ from engine import *
 from eventManager import *
 from widgets import *
 from bricks import *
+from ball import *
 
 class Game(Engine):
     def __init__(self):
@@ -40,10 +41,10 @@ class Game(Engine):
 
     def makeLevel(self):
         screen = Engine.Layer()
-
+        ball = Ball(self.eventManager)
         wall = Bricks(self.eventManager, self.window)
         screen.addSprite(wall.getPile().sprites())
-
+        screen.addSprite(ball)
         return screen
 
     def makeOptions(self):
@@ -137,3 +138,4 @@ class Game(Engine):
         game.end()
 
 Game.launch()
+

@@ -2,19 +2,19 @@ import pygame
 from brick import *
 
 class Bricks():
-    def __init__(self, eventManager, window, gap = 2):
+    def __init__(self, eventManager, availableWidth, availableHeight, gap = 2):
         self.eventManager = eventManager
         self.__pile = pygame.sprite.Group()
-        self.createWall(eventManager, window, gap)
+        self.createWall(eventManager, availableWidth, availableHeight, gap)
 
     def getPile(self):
         return self.__pile
 
-    def createWall(self, eventManager, window, gap):
+    def createWall(self, eventManager, availableWidth, availableHeight, gap):
         brick = Brick(eventManager, [0,0])
-        availableWidth = window.get_width()
-        availableHeight = window.get_height() - 200 #allocate 200px on bottom for paddle and maneuvering space
 
+        availableHeight -= 200 #allocate space at bottom for paddle
+        
         ballparkWide = availableWidth // brick.getWidth()
         ballparkHigh = availableHeight // brick.getHeight()
 

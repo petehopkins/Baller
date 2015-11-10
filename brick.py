@@ -38,15 +38,13 @@ class Brick(Engine.GUI.Widget):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
-        self.image.fill(self.border)
 
         self.inner = pygame.Surface((self.width - (self.borderWidth * 2), self.height - (self.borderWidth * 2)))
         self.innerRect = self.inner.get_rect()
         self.innerRect.x = (self.rect.width / 2) - (self.innerRect.width / 2)
         self.innerRect.y = (self.rect.height / 2) - (self.innerRect.height / 2)
-        self.inner.fill(self.fill)
 
-        self.image.blit(self.inner, self.innerRect)
+        self.redrawBrick()
 
     def notify(self, event):
         if isinstance(event, Events.CollisionEvent):
@@ -70,6 +68,11 @@ class Brick(Engine.GUI.Widget):
     def removeFromPlay(self):
         self.isInPlay = False #set flag
 
+    def redrawBrick(self):
+        self.image.fill(self.border)
+        self.inner.fill(self.fill)
+        self.image.blit(self.inner, self.innerRect)
+
     def animate(self):
         if self.hitsRemaining == 1:
             self.fill = Engine.Colors.LAVENDER
@@ -78,6 +81,8 @@ class Brick(Engine.GUI.Widget):
         else:
             self.fill = Engine.Colors.BLACK
             self.removeFromPlay() #no hits remaining, get rid of this one
+
+        self.redrawBrick()
 
     def collide(self):
         self.hitsRemaining -= 1 #decrement hits

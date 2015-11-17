@@ -3,7 +3,7 @@ from engine import *
 from eventManager import *
 
 class HoverableWidget(Engine.GUI.Widget):
-    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, container = None, onHoverAction = None):
+    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, onHoverAction = None, container = None):
         super().__init__(eventManager, container)
 
         if textColor:
@@ -120,8 +120,8 @@ Label = HoverableWidget #Friendly alias for HoverableWidget
 ##        super().__init__(eventManager, text, textColor, backgroundColor, container, onHoverAction)
 
 class Button(HoverableWidget):
-    def __init__(self, eventManager, text, textColor = None, buttonColor = None, container = None, onClickAction = None, onHoverAction = None):
-        super().__init__(eventManager, text, textColor, buttonColor, container, onHoverAction)
+    def __init__(self, eventManager, text, textColor = None, buttonColor = None, onClickAction = None, onHoverAction = None, container = None):
+        super().__init__(eventManager, text, textColor, buttonColor, onHoverAction, container)
 
         self.onClickAction = onClickAction
 
@@ -163,44 +163,74 @@ class SliderWidget(Engine.GUI.Widget):
         self.width = 200
         self.height = 72
 
+        self.defaultValue = defaultValue
+        self.text = str(self.defaultValue)
+        self.value = self.defaultValue
+        self.stepValues = {}
+
         self.font = pygame.font.Font(None, 24)
-        self.values = values
-        self.step = self.width / len(values)
-        self.value = str(defaultValue)
 
         if onDragAction:
             self.onDragAction = onDragAction
         else:
-            self.onDragAction = self.changeValue
+            self.onDragAction = self.slideToValue
 
-        self.image = pygame.Surface((200, 72)) #contains bar, box and text; defined here for initial positioning
+        self.image = pygame.Surface((self.width, self.height)) #contains bar, box and text; all are defined here for initial positioning
         self.rect = self.image.get_rect()
 
-    def addListeners(self):
-        event = Events.DragWidgetEvent()
-        self.eventManager.addListener(event, self)
-
-        event = Events.LeftClickWidgetEvent()
-        self.eventManager.addListener(event, self)
-
-    def redrawWidget(self):
-        self.dirty = True
-
-        self.image = pygame.Surface((200, 72)) #contains bar, box and text
-        self.image.fill(self.backgroundColor)
-        #self.rect = self.image.get_rect()
-
         self.bar = pygame.Surface((200, 10))
-        self.bar.fill(Engine.Colors.GREY)
+        self.bar.fill(Engine.Colors.LIGHT_GREY)
         self.barRect = self.bar.get_rect()
         self.barRect.x = 0
         self.barRect.y = 15
 
         self.box = pygame.Surface((10, 40))
-        self.box.fill(Engine.Colors.GREY)
+        self.box.fill(Engine.Colors.LIGHT_GREY)
         self.boxRect = self.box.get_rect()
 
-        self.renderedText = self.font.render(self.value, True, self.textColor, self.backgroundColor)
+        self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
+        self.textRect = self.renderedText.get_rect()
+        self.textRect.x = (self.image.get_rect().width / 2) - (self.textRect.width / 2)
+        self.textRect.y = self.image.get_rect().height - 8 - self.textRect.height
+
+        #make a lookup table for box position and value
+        vals = len(values) - 1
+        isRawList = not (type(values[0]) == type([]) or type(values[0]) == type(()))
+        maxStep = self.barRect.width - self.boxRect.width
+        minStep = 0
+        stepCounter = 0
+        self.step = ((maxStep - minStep) / vals)
+        for val in values:
+            key = self.step * stepCounter
+            if isRawList:
+                self.stepValues[key] = (str(val), val) #mimic (label, value)
+            else:
+                self.stepValues[key] = val #should already be (label, value) or [label, value]
+
+            stepCounter += 1
+
+        self.setValue(self.defaultValue)
+
+    def addListeners(self):
+        event = Events.DragWidgetEvent()
+        self.eventManager.addListener(event, self)
+
+##        event = Events.LeftClickWidgetEvent()
+##        self.eventManager.addListener(event, self)
+
+    def redrawWidget(self):
+        self.dirty = True
+
+        self.image = pygame.Surface((self.width, self.height))
+        self.image.fill(self.backgroundColor)
+
+        self.bar = pygame.Surface((200, 10))
+        self.bar.fill(Engine.Colors.LIGHT_GREY)
+
+        self.box = pygame.Surface((10, 40))
+        self.box.fill(Engine.Colors.LIGHT_GREY)
+
+        self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()
         self.textRect.x = (self.image.get_rect().width / 2) - (self.textRect.width / 2)
         self.textRect.y = self.image.get_rect().height - 8 - self.textRect.height
@@ -220,12 +250,41 @@ class SliderWidget(Engine.GUI.Widget):
             self.onDragAction(pos)
             self.update()
 
-    def changeValue(self, pos):
-        dx = pos[0]
+    def setValue(self, val):
+        for key in self.stepValues.keys():
+            item = self.stepValues[key]
+            if val == item[0] or val == item[1]:
+                self.slideToValue(key)
+
+    def slideToValue(self, dx):
+        self.dirty = True
+        closestStep = int(dx // self.step) #ensure integer
+        key = closestStep * self.step
+
+        if key in self.stepValues.keys():
+            item = self.stepValues[key]
+            self.text = item[0]
+            self.value = item[1]
+            self.boxRect.x = key
+
+        self.update()
+
+    def checkIfOnSelf(self, event):
+        padx = 100
+        relx = event.pos[0] - self.rect.x
+        minx = self.barRect.x - padx
+        maxx = minx + self.barRect.width + padx
+
+        rely = event.pos[1] - self.rect.y
+        miny = self.boxRect.y
+        maxy = miny + self.boxRect.height
+
+        if (minx <= relx <= maxx and miny <= rely <= maxy):
+            self.drag(relx)
 
     def notify(self, event):
-        if isinstance(event, Events.DragWidgetEvent) and self.rect.collidepoint(event.pos):
-            self.drag(event.pos)
+        if isinstance(event, Events.DragWidgetEvent):
+            self.checkIfOnSelf(event)
 
-        if isinstance(event, Events.LeftClickWidgetEvent) and self.rect.collidepoint(event.pos):
-            self.drag(event.pos)
+        if isinstance(event, Events.LeftClickWidgetEvent):
+            self.checkIfOnSelf(event)

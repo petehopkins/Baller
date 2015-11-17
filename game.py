@@ -15,13 +15,25 @@ from ball import *
 class Game(Engine):
     def __init__(self):
         super().__init__()
-        self.eventManager = EventManager()
+        self.eventManager = EventManager(self)
         self.ticker = Engine.Ticker(self.eventManager, self)
+
+        event = Events.ActivateScreenEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.NewGameEvent()
+        self.eventManager.addListener(event, self)
 
         event = Events.ShowOptionsEvent()
         self.eventManager.addListener(event, self)
 
-        event = Events.NewGameEvent()
+        event = Events.SaveOptionsEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.ResetValuesToDefaultsEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.CancelOptionsEvent()
         self.eventManager.addListener(event, self)
 
     def postNewGameEvent(self):
@@ -34,6 +46,18 @@ class Game(Engine):
 
     def postQuitEvent(self):
         event = Events.QuitEvent()
+        self.eventManager.post(event)
+
+    def postSaveOptionsEvent(self):
+        event = Events.SaveOptionsEvent()
+        self.eventManager.post(event)
+
+    def postResetValuesToDefaultsEvent(self):
+        event = Events.ResetValuesToDefaultsEvent()
+        self.eventManager.post(event)
+
+    def postCancelOptionsEvent(self):
+        event = Events.CancelOptionsEvent()
         self.eventManager.post(event)
 
     def makeLevel(self):
@@ -62,23 +86,28 @@ class Game(Engine):
         sensitivityLabel.setPosition(50, 200)
         screen.addWidget(sensitivityLabel)
 
-        sensitivity = SliderWidget(self.eventManager, range(0, 100), 0)
-        sensitivity.setPosition(550, sensitivityLabel.rect.y + 20)
+        sensitivity = SliderWidget(self.eventManager, range(0, 100), 99)
+        sensitivity.setPosition(530, sensitivityLabel.rect.y + 20)
         screen.addWidget(sensitivity)
 
         difficultyLabel = Label(self.eventManager, "Difficulty", self.Colors.BLACK)
         difficultyLabel.setPosition(50, 300)
         screen.addWidget(difficultyLabel)
 
-        difficulty = SliderWidget(self.eventManager, [0,1,2,3,4], 0)
-        difficulty.setPosition(550, difficultyLabel.rect.y + 20)
+        difficulty = SliderWidget(self.eventManager, self.Options.availableDifficulties, 1)
+        difficulty.setPosition(530, difficultyLabel.rect.y + 20)
         screen.addWidget(difficulty)
 
-        saveButton = Button(self.eventManager, "Set Options", buttonColor = self.Colors.GREY)
+        saveButton = Button(self.eventManager, "Save", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postSaveOptionsEvent)
         saveButton.setPosition(50, 500)
         screen.addWidget(saveButton)
 
-        cancelButton = Button(self.eventManager, "Cancel", buttonColor = self.Colors.LAVENDER)
+        defaultsButton = Button(self.eventManager, "Defaults", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postResetValuesToDefaultsEvent)
+        defaultsButton.centerOn(self.window)
+        defaultsButton.setPosition(y = 500)
+        screen.addWidget(defaultsButton)
+
+        cancelButton = Button(self.eventManager, "Cancel", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postCancelOptionsEvent)
         cancelButton.setPosition(575, 500)
         screen.addWidget(cancelButton)
 
@@ -108,23 +137,40 @@ class Game(Engine):
         return screen
 
     def showScreen(self, screenName):
-        screen = self.screens[screenName]
+        screen = self.screens[self.activeScreen]
+        screen.deactivate()
 
-        self.screens[self.activeScreen].deactivate()
         self.activeScreen = screenName
+        screen = self.screens[self.activeScreen]
 
         self.window.fill(self.windowFillColor)
-        screen.addWidgetListeners()
         screen.redrawWidgets(self.window)
-        screen.addSpriteListeners()
         screen.redrawSprites(self.window)
 
+        event = Events.ActivateScreenEvent() # If not posted as an event, the activate method will add listeners in time for a click event to hit buttons that weren't listening at the time of the click
+        self.eventManager.post(event) #seems to indicate that pygame is muli-threaded, but we haven't started another thread so why is this acting like a race condition?
+
     def notify(self, event):
-        if isinstance(event, Events.ShowOptionsEvent):
-            self.showScreen("options")
+        if isinstance(event, Events.ActivateScreenEvent):
+            self.screens[self.activeScreen].activate()
 
         if isinstance(event, Events.NewGameEvent):
             self.showScreen("level")
+
+        if isinstance(event, Events.ShowOptionsEvent):
+            self.showScreen("options")
+
+        if isinstance(event, Events.SaveOptionsEvent):
+            self.showScreen("start")
+
+        if isinstance(event, Events.ResetValuesToDefaultsEvent):
+            widgets = self.screens[self.activeScreen].getWidgets()
+            for widget in widgets:
+                if hasattr(widget, "defaultValue"):
+                    widget.setValue(widget.defaultValue)
+
+        if isinstance(event, Events.CancelOptionsEvent):
+            self.showScreen("start")
 
     @staticmethod
     def launch():

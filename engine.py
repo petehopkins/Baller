@@ -22,15 +22,20 @@ class Engine():
 
     Your planet needs you!
             '''
+
+            self.availableDifficulties = [("Easy", 0), ("Normal", 1), ("Hard", 2), ("Brutal", 3)]
+
             self.windowWidth = 800
             self.windowHeight = 600
-            self.tickSpeed = 60
-            self.availableDifficulties = [("Easy", 0), ("Normal", 1), ("Hard", 2), ("Brutal", 3)]
+            self.windowSize = (self.windowWidth, self.windowHeight)
+            self.windowFillColor = Engine.Colors.WHITE
+
+
             self.paddleWidth = 75
             self.paddleHeight = 25
             self.paddleLeftBound = 10
             self.paddleRightBound = self.paddleLeftBound
-            self.paddleColor = self.Colors.DARK_BLUE
+            self.paddleColor = Engine.Colors.DARK_BLUE
 
     class GUI():
         def __init__(self):
@@ -162,7 +167,7 @@ class Engine():
                 self.eventManager.running = False
 
             if isinstance(event, Events.TickEvent):
-                self.engine.clock.tick(self.engine.tickSpeed)
+                self.engine.clock.tick(self.engine.options.tickSpeed)
                 self.engine.redrawWindow() #redraw sprites
                 pygame.display.update() #redraw screen
 
@@ -184,27 +189,12 @@ class Engine():
         self.options = Engine.Options()
         #self.GUI.Widget = Engine.GUI.Widget()
 
-        self.name = "Baller" #"Defeat the oppressive war machine of the evil Quadratic invaders!"
-        self.backstory = '''
-From the depths of Outer Space comes the vile army of the extraterrestrial race known only as the Quadrilaterians.
-
-Freshly resupplied from the war-torn planet of Buttercracker IV, the Quadrilaterians are hellbent on conquest and will not stop until they have crushed our military, overthrown our government, quelled all rebellions, completely subjugated our planet and have captured all of our cheese and the means of production for such.
-
-It is up to you, our Champion, to defeat the oppressive war machine of the evil Quadratic invaders!
-
-Your planet needs you!
-        '''
         self.sprites = pygame.sprite.Group()
-        self.windowWidth = self.Options.windowWidth
-        self.windowHeight = self.Options.windowHeight
-        self.windowSize = (self.windowWidth, self.windowHeight)
-        self.windowFillColor = self.Colors.WHITE
-        self.tickSpeed = self.Options.tickSpeed
         self.screens = {}
         self.activeScreen = ""
 
         #Create a window and start a clock
         pygame.init()
-        self.window = pygame.display.set_mode(self.windowSize)
-        pygame.display.set_caption(self.name)
+        self.window = pygame.display.set_mode(self.options.windowSize)
+        pygame.display.set_caption(self.options.name)
         self.clock = pygame.time.Clock()

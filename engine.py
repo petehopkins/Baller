@@ -5,6 +5,7 @@ class Engine():
     class Colors():
         WHITE = (255, 255, 255)
         LIGHT_GREY = (192, 192, 192)
+        DARK_BLUE = (0, 0, 96)
         LAVENDER = (210, 166, 255)
         GREY = (128, 128, 128)
         BLACK = (0, 0, 0)
@@ -25,6 +26,11 @@ class Engine():
             self.windowHeight = 600
             self.tickSpeed = 60
             self.availableDifficulties = [("Easy", 0), ("Normal", 1), ("Hard", 2), ("Brutal", 3)]
+            self.paddleWidth = 75
+            self.paddleHeight = 25
+            self.paddleLeftBound = 10
+            self.paddleRightBound = self.paddleLeftBound
+            self.paddleColor = self.Colors.DARK_BLUE
 
     class GUI():
         def __init__(self):
@@ -38,7 +44,7 @@ class Engine():
                 self.container = container
                 self.focused = False
                 self.dirty = True
-                self.Options = self.eventManager.game.Options #alias
+                self.options = self.eventManager.game.options #alias
 
             def setPosition(self, x = None, y = None):
                 if x or y:
@@ -78,7 +84,8 @@ class Engine():
                 print("Abstract Class not implemented. Triggering event:", event.name)
 
     class Layer():
-        def __init__(self):
+        def __init__(self, mouseVisible = True):
+            self.mouseVisible = mouseVisible
             self.widgets = pygame.sprite.Group()
             self.sprites = pygame.sprite.Group()
             self.activate = self.addListeners
@@ -174,7 +181,7 @@ class Engine():
         #Initial module setup
         #make an instance of GUI and Options classes so the interpreter won't kvetch
         self.GUI = Engine.GUI()
-        self.Options = Engine.Options()
+        self.options = Engine.Options()
         #self.GUI.Widget = Engine.GUI.Widget()
 
         self.name = "Baller" #"Defeat the oppressive war machine of the evil Quadratic invaders!"

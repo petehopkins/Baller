@@ -9,7 +9,27 @@ class Engine():
         GREY = (128, 128, 128)
         BLACK = (0, 0, 0)
 
+    class Options():
+        def __init__(self):
+            self.name = "Baller" #"Defeat the oppressive war machine of the evil Quadratic invaders!"
+            self.backstory = '''
+    From the depths of Outer Space comes the vile army of the extraterrestrial race known only as the Quadrilaterians.
+
+    Freshly resupplied from the war-torn planet of Buttercracker IV, the Quadrilaterians are hellbent on conquest and will not stop until they have crushed our military, overthrown our government, quelled all rebellions, completely subjugated our planet and have captured all of our cheese and the means of production for such.
+
+    It is up to you, our Champion, to defeat the oppressive war machine of the evil Quadratic invaders!
+
+    Your planet needs you!
+            '''
+            self.windowWidth = 800
+            self.windowHeight = 600
+            self.tickSpeed = 60
+            self.availableDifficulties = [("Easy", 0), ("Normal", 1), ("Hard", 2), ("Brutal", 3)]
+
     class GUI():
+        def __init__(self):
+            pass
+
         class Widget(pygame.sprite.Sprite):
             def __init__(self, eventManager, container = None):
                 pygame.sprite.Sprite.__init__(self)
@@ -18,6 +38,7 @@ class Engine():
                 self.container = container
                 self.focused = False
                 self.dirty = True
+                self.Options = self.eventManager.game.Options #alias
 
             def setPosition(self, x = None, y = None):
                 if x or y:
@@ -151,7 +172,9 @@ class Engine():
 
     def __init__(self):
         #Initial module setup
+        #make an instance of GUI and Options classes so the interpreter won't kvetch
         self.GUI = Engine.GUI()
+        self.Options = Engine.Options()
         #self.GUI.Widget = Engine.GUI.Widget()
 
         self.name = "Baller" #"Defeat the oppressive war machine of the evil Quadratic invaders!"
@@ -165,11 +188,11 @@ It is up to you, our Champion, to defeat the oppressive war machine of the evil 
 Your planet needs you!
         '''
         self.sprites = pygame.sprite.Group()
-        self.windowWidth = 800
-        self.windowHeight = 600
+        self.windowWidth = self.Options.windowWidth
+        self.windowHeight = self.Options.windowHeight
         self.windowSize = (self.windowWidth, self.windowHeight)
         self.windowFillColor = self.Colors.WHITE
-        self.tickSpeed = 60
+        self.tickSpeed = self.Options.tickSpeed
         self.screens = {}
         self.activeScreen = ""
 

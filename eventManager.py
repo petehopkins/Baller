@@ -24,21 +24,6 @@ class Events():
             self.name = "Game Tick Event"
             super().__init__()
 
-    class NewGameEvent(Event):
-        def __init__(self):
-            self.name = "New Game Event"
-            super().__init__()
-
-    class QuitEvent(Event):
-        def __init__(self):
-            self.name = "Program Quit Event"
-            super().__init__()
-
-    class ShowOptionsEvent(Event):
-        def __init__(self):
-            self.name = "Show Options Event"
-            super().__init__()
-
     class CollisionEvent(Event):
         """..."""
         def __init__(self, obj = None):
@@ -62,9 +47,9 @@ class Events():
 
     class KeyboardActivateWidgetEvent(Event):
         """..."""
-        def __init__(self, widget):
+        def __init__(self, keys):
             self.name = "Keyboard Activate Widget Event"
-            self.widget = widget
+            self.keys = keys
             super().__init__()
 
     class LeftClickWidgetEvent(Event):
@@ -88,11 +73,50 @@ class Events():
             self.pos = pos
             super().__init__()
 
+    class ActivateScreenEvent(Event):
+        def __init__(self):
+            self.name = "Activate Screen Event"
+            super().__init__()
+
+    class NewGameEvent(Event):
+        def __init__(self):
+            self.name = "New Game Event"
+            super().__init__()
+
+    class ShowOptionsEvent(Event):
+        def __init__(self):
+            self.name = "Show Options Event"
+            super().__init__()
+
+    class QuitEvent(Event):
+        def __init__(self):
+            self.name = "Program Quit Event"
+            super().__init__()
+
+    class SaveOptionsEvent(Event):
+        """..."""
+        def __init__(self):
+            self.name = "Save Options Event"
+            super().__init__()
+
+    class ResetValuesToDefaultsEvent(Event):
+        """..."""
+        def __init__(self):
+            self.name = "Reset Values To Defaults Event"
+            super().__init__()
+
+    class CancelOptionsEvent(Event):
+        """..."""
+        def __init__(self):
+            self.name = "Cancel Options Event"
+            super().__init__()
+
 class EventManager:
     #Used to decouple event handling from interface generation
-    def __init__(self):
+    def __init__(self, game):
         self.events = {}
         self.running = True
+        self.game = game
 
     def getListeners(self):
         listeners = {}
@@ -143,6 +167,10 @@ class EventManager:
                 if e.type ==  pygame.MOUSEMOTION:
                     event = Events.HoverWidgetEvent(e.pos)
                     self.post(event)
+
+                    if e.buttons[0] == 1:
+                        event = Events.DragWidgetEvent(e.pos)
+                        self.post(event)
 ##
 ##				  if e.type ==  pygame.KEYDOWN:
 ##

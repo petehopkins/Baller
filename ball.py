@@ -1,98 +1,206 @@
-import pygame
+import pygame, math
 from engine import Engine
 from eventManager import Events
-from Bricks import *
+from bricks import *
+from paddle import *
 
 class Ball(Engine.GUI.Widget):
-    def __init__(self, eventManager, stage):
+    def __init__(self, eventManager, level):
         super().__init__(eventManager, None)
 
-        self.stage = stage
+        self.level = level
         self.eventManager = eventManager
-        #making rectangular
-        self.width = 25
-        self.height = 25
-        self.xDirection = 1
-        self.yDirection = 1
-        self.dx = 150
-        self.dy = 150
-        self.speed = 5
-        self.color = (255,0,0)
 
-        self.image = pygame.Surface((self.width, self.height))
+        self.radius = self.options.ballRadius
+        self.vector = self.options.ballVectorInitial
+        self.gyreDirection = self.options.ballGyreDirection
+        self.speed = self.options.ballSpeed
+        self.color = self.options.ballColor
+
+        # puting these here as these may be needed
+        self.width = self.options.ballRadius * 2
+        self.height = self.width
+
+        #making a square ball for now
+        self.image = pygame.Surface((self.options.ballRadius * 2, self.options.ballRadius * 2))
         self.image.fill(self.color)
 
         self.rect = self.image.get_rect()
-        self.rect.x = 150
-        self.rect.y = 150
+        self.rect.x = self.options.ballInitialPosition[0] - self.radius
+        self.rect.y = self.options.ballInitialPosition[1] - self.radius
 
-    def checkForCollision():
-        #check for boundary
-        #check for paddle
-        #check for bricks
-            #if brick:
-                #brick.collide()
+        self.group = pygame.sprite.GroupSingle()
+        self.group.add(self)
 
-        #if collision:
-            #self.bounce()
-    def move(self):
-        self.dx = self.xDirection * self.speed
-        self.dy = self.yDirection * self.speed
-        
-        self.rect.x += self.dx
-        self.rect.y += self.dy
+    def update(self):
+        x = self.rect.x
+        y = self.rect.y
 
-        #check for boundary collisions
+        self.width = self.options.ballRadius * 2
+        self.height = self.width
 
-        self.checkForCollisions()
+        self.image = pygame.Surface((self.options.ballRadius * 2, self.options.ballRadius * 2))
+        self.image.fill(self.color)
 
-    #if boundaries are hit    
-    #def bounce():
-        if self.rect.x > (800 - self.width) or self.rect.x < 0:
-            self.xDirection *= -1
-        
-        if self.rect.y < 0 or self.rect.y > (600 - self.height):
-            self.yDirection *= -1
-           
-    #if paddle/brick is hit        
-##    def collision():
-##        if paddle:
-##            if hit = True
-##            self.dy *= -1
-##            
-        spridgets = self.stage.getWidgets()
-        if self in spridgets:
-            spridgets.remove(self)
-        
-        collides = self.groupcollide(self, spridgets)
-        for c in collides:
-            
-                    
-        for brick in bricks
-            if self.isInPlay = True
-                #refer back to brick side/height 
-                #if (leftBorder(self.height in brick?) or rightBorder hit) = True
-                self.dx *= -1
-                self.collide() #call collide function or collision event
-                #refer back to brick top/bottom/width
-                #if (self.width?) = True
-                self.dy *= -1
-                self.collide() #call collide function or collision event?
-                #add score?
-            if self.isInPlay = False
-                pass
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
     def addListeners(self,):
         event = Events.TickEvent()
         self.eventManager.addListener(event, self)
-            
+
     def notify(self, event):
         if isinstance(event, Events.TickEvent):
-            #reposition ball
-            self.move()
+            # reposition ball and check for collisions
+            self.move(self.speed)
+            self.checkForCollisions()
 
-    self.eventManager.post(eventName) #Collide?
+    def handleOverlap(self, xOverlap, yOverlap):
+        #figure out which overlap is further into the brick with an edge case of equally
+        overlap = 0
+        normalAxis = 180 # default to top/bottom collisions
 
-    #for draw - define surface (rectangle) image property self.image self.rect
+        # sanity check for overlap as it should never be greater than the speed of the ball
+        if xOverlap > self.speed:
+            xOverlap = 0 # ignore overlap
 
+        if yOverlap > self.speed:
+            yOverlap =0 # ignore overlap
 
+        if yOverlap > xOverlap: # collision likely came from top/bottom
+            overlap = yOverlap
+
+        elif xOverlap > yOverlap: # collsions likely came from left.right
+            overlap = xOverlap
+            normalAxis = 360
+
+        else: # edge case of equal, so which one doesn't matter
+            overlap = xOverlap
+
+        self.move(overlap * -1, assureMovement = True) # move ball back along vector to the last edge passed
+
+        return normalAxis
+
+    def bounce(self, bounces, normalAxis, bricks, spin = None):
+        # recheck position and move ball outside of (or to the edge of) the collision zone to prevent multiple bounces on the same object per hit
+        # otherwise vectors can get messed up as the ball bounces off the object going into it and then again (and again and again, etc.)
+        # while exiting the collision zone
+
+        normals = []
+
+        if self.leftEdge() < 0:
+            self.rect.x = 0 # left edge is past window, clamp to left edge of window
+
+        if self.rightEdge() > self.options.windowWidth:
+            self.rect.x = self.options.windowWidth - self.rect.width # right edge is past window, clamp to right edge of window
+
+        if self.topEdge() < 0:
+            self.rect.y = 0 # top edge is past window, clamp to top edge of window
+
+        if self.bottomEdge() > self.options.windowHeight:
+             self.rect.y = self.options.windowHeight - self.rect.height # bottom edge is past window, clamp to bottom edge of window
+
+        # now do the same for the bricks and the paddle (which would be in bricks as it is a collidable object)
+        for brick in bricks:
+            if brick.rect.collidepoint(self.rect.topleft):
+                # topleft is within the brick
+                xOverlap = abs(brick.rightEdge() - self.leftEdge())
+                yOverlap = abs(brick.bottomEdge() - self.topEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap))
+
+            if brick.rect.collidepoint(self.rect.topright):
+                # topright is within the brick
+                xOverlap = abs(brick.leftEdge() - self.rightEdge())
+                yOverlap = abs(brick.bottomEdge() - self.topEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap))
+
+            if brick.rect.collidepoint(self.rect.bottomright):
+                # bottomright is within the brick
+                xOverlap = abs(brick.leftEdge() - self.rightEdge())
+                yOverlap = abs(brick.topEdge() - self.bottomEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap))
+
+            if brick.rect.collidepoint(self.rect.bottomleft):
+                # bottomleft is within the brick
+                xOverlap = abs(brick.rightEdge() - self.leftEdge())
+                yOverlap = abs(brick.topEdge() - self.bottomEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap))
+
+            brick.collide() # may as well notify the object of a collision here so we don't have to loop through twice
+
+        #finally, change vector, angle of incidence = angle of reflection, may need to change rotation (counter/clockwise) on paddle hit or ball spin
+        if len(normals) > 0: # multiple bounces passed in, bounce once prioritizing vertical travel
+            normalAxis = max(normals)
+
+        #angle of incidence... yadda yadda...
+        reflectionVector = (normalAxis - self.vector)
+
+        #change gyre direction if needed
+        reflectionVector -= self.gyreDirection #(0 or 180)
+
+        #keep the angles sane (i.e., between 0 and 359)
+        reflectionVector %= 360
+
+        #update to new vector
+        self.vector = reflectionVector
+
+    def checkForCollisions(self):
+        #start counting bounces
+        bounces = 0
+        collidableObjects = pygame.sprite.Group()
+
+        #check for boundary collisions
+        if self.topEdge() <= 0:
+            self.bounce(1, 180, collidableObjects)
+
+        if self.rightEdge() >= self.options.windowWidth:
+            self.bounce(1, 360, collidableObjects)
+
+        if self.bottomEdge() >= self.options.windowHeight: #once algorithm is abstracted / finalized, lose a ball instead
+            self.bounce(1, 180, collidableObjects)
+
+        if self.leftEdge() <= 0:
+            self.bounce(1, 360, collidableObjects)
+
+        #check for bricks
+        collidableObjects.add(self.level.getWidgets(Brick))
+        collidableObjects = pygame.sprite.groupcollide(collidableObjects, self.group, False, False) #redfine collidableObjects to include only those Bricks that were collided with
+        bounces += len(collidableObjects)
+
+        if bounces > 0:
+            self.bounce(bounces, 180, collidableObjects)
+
+        # redfine as a new group to remove all sprites from this group and redefine it as a actual group as groupcollide returns a dict
+        collidableObjects = pygame.sprite.Group()
+
+        # reset bounces
+        bounces = 0
+
+        # check for paddle
+        collidableObjects.add(self.level.getWidgets(Paddle))
+        collidableObjects = pygame.sprite.groupcollide(collidableObjects, self.group, False, False) #redfine collidableObjects to include only those Paddles that were collided with
+        bounces += len(collidableObjects)
+
+        if bounces > 0:
+            self.bounce(bounces, 180, collidableObjects) # pass in to handle basic collision and overlaps
+            for paddle in collidableObjects:
+                paddle.redirect(self)
+
+    def move(self, distance, assureMovement = False):
+        vector = math.radians(self.vector)
+
+        dx = distance * math.cos(vector)
+        dy = distance * math.sin(vector)
+
+        if assureMovement:
+            if 0 < abs(dx) < 1:
+                sign = dx / abs(dx)
+                dx = 1 * sign
+
+            if 0 < abs(dy) < 1:
+                sign = dy / abs(dy)
+                dy = 1 * sign
+
+        self.rect.x += dx
+        self.rect.y += dy

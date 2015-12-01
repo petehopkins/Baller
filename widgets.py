@@ -12,13 +12,13 @@ class HoverableWidget(Engine.GUI.Widget):
             self.textColor = Engine.Colors.BLACK
 
         if backgroundColor == None:
-            backgroundColor = (255, 255, 255, 0)
+            backgroundColor = Engine.Colors.WHITE
 
         self.backgroundColor = backgroundColor
         self.unfocusedBackgroundColor = self.backgroundColor
         self.focusedBackgroundColor = self.getFocusedColor(self.backgroundColor)
 
-        self.font = pygame.font.Font(None, 56)
+        self.font = pygame.font.Font(None, self.options.widgetFontSize)
         self.text = text
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor) #need this here to get initial size
@@ -27,12 +27,12 @@ class HoverableWidget(Engine.GUI.Widget):
 
         self.width = width
         if self.width == None:
-            self.width = self.rect.width + 40
+            self.width = self.rect.width + self.options.widgetPadding
             self.rect.width = self.width
 
         self.height = height
         if self.height == None:
-            self.height = self.rect.height + 40
+            self.height = self.rect.height + self.options.widgetPadding
             self.rect.height = self.height
 
         if onHoverAction:
@@ -146,7 +146,7 @@ class Button(HoverableWidget):
             self.click()
 
 class SliderWidget(Engine.GUI.Widget):
-    def __init__(self, eventManager, values, defaultValue, textColor = None, backgroundColor = None, container = None, onDragAction = None):
+    def __init__(self, eventManager, valueKey, values, defaultValue, textColor = None, backgroundColor = None, container = None, onDragAction = None):
         super().__init__(eventManager, container)
 
         self.eventManager = eventManager
@@ -157,46 +157,47 @@ class SliderWidget(Engine.GUI.Widget):
             self.textColor = Engine.Colors.BLACK
 
         if backgroundColor == None:
-            backgroundColor = (255, 255, 255, 0)
+            backgroundColor = Engine.Colors.WHITE
 
         self.backgroundColor = backgroundColor
-        self.width = 200
-        self.height = 72
+        self.width = self.options.sliderWidth
+        self.height = self.options.sliderHeight
 
+        self.valueKey = valueKey
         self.defaultValue = defaultValue
         self.text = str(self.defaultValue)
         self.value = self.defaultValue
         self.stepValues = {}
 
-        self.font = pygame.font.Font(None, 24)
+        self.font = pygame.font.Font(None, self.options.sliderFontSize)
 
         if onDragAction:
             self.onDragAction = onDragAction
         else:
             self.onDragAction = self.slideToValue
 
-        self.image = pygame.Surface((self.width, self.height)) #contains bar, box and text; all are defined here for initial positioning
+        self.image = pygame.Surface((self.width, self.height)) #contains bar, slide and text; all are defined here for initial positioning
         self.rect = self.image.get_rect()
 
-        self.bar = pygame.Surface((200, 10))
+        self.bar = pygame.Surface((self.options.sliderWidth, self.options.sliderBarHeight))
         self.bar.fill(Engine.Colors.LIGHT_GREY)
         self.barRect = self.bar.get_rect()
-        self.barRect.x = 0
-        self.barRect.y = 15
+        self.barRect.x = self.options.sliderBarOffsetX
+        self.barRect.y = self.options.sliderBarOffsetY
 
-        self.box = pygame.Surface((10, 40))
-        self.box.fill(Engine.Colors.LIGHT_GREY)
-        self.boxRect = self.box.get_rect()
+        self.slide = pygame.Surface((self.options.sliderSlideWidth, self.options.sliderSlideHeight))
+        self.slide.fill(Engine.Colors.LIGHT_GREY)
+        self.slideRect = self.slide.get_rect()
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()
         self.textRect.x = (self.image.get_rect().width / 2) - (self.textRect.width / 2)
-        self.textRect.y = self.image.get_rect().height - 8 - self.textRect.height
+        self.textRect.y = self.image.get_rect().height - self.options.sliderTextOffsetY - self.textRect.height
 
-        #make a lookup table for box position and value
+        #make a lookup table for slide position and value
         vals = len(values) - 1
         isRawList = not (type(values[0]) == type([]) or type(values[0]) == type(()))
-        maxStep = self.barRect.width - self.boxRect.width
+        maxStep = self.barRect.width - self.slideRect.width
         minStep = 0
         stepCounter = 0
         self.step = ((maxStep - minStep) / vals)
@@ -215,8 +216,8 @@ class SliderWidget(Engine.GUI.Widget):
         event = Events.DragWidgetEvent()
         self.eventManager.addListener(event, self)
 
-##        event = Events.LeftClickWidgetEvent()
-##        self.eventManager.addListener(event, self)
+        event = Events.LeftClickWidgetEvent()
+        self.eventManager.addListener(event, self)
 
     def redrawWidget(self):
         self.dirty = True
@@ -224,19 +225,19 @@ class SliderWidget(Engine.GUI.Widget):
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(self.backgroundColor)
 
-        self.bar = pygame.Surface((200, 10))
+        self.bar = pygame.Surface((self.options.sliderWidth, self.options.sliderBarHeight))
         self.bar.fill(Engine.Colors.LIGHT_GREY)
 
-        self.box = pygame.Surface((10, 40))
-        self.box.fill(Engine.Colors.LIGHT_GREY)
+        self.slide = pygame.Surface((self.options.sliderSlideWidth, self.options.sliderSlideHeight))
+        self.slide.fill(Engine.Colors.LIGHT_GREY)
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()
         self.textRect.x = (self.image.get_rect().width / 2) - (self.textRect.width / 2)
-        self.textRect.y = self.image.get_rect().height - 8 - self.textRect.height
+        self.textRect.y = self.image.get_rect().height - self.options.sliderTextOffsetY - self.textRect.height
 
         self.image.blit(self.bar, self.barRect)
-        self.image.blit(self.box, self.boxRect)
+        self.image.blit(self.slide, self.slideRect)
         self.image.blit(self.renderedText, self.textRect)
 
     def update(self):
@@ -258,33 +259,32 @@ class SliderWidget(Engine.GUI.Widget):
 
     def slideToValue(self, dx):
         self.dirty = True
-        closestStep = int(dx // self.step) #ensure integer
+        closestStep = int(dx / self.step) #ensure integer
         key = closestStep * self.step
 
         if key in self.stepValues.keys():
             item = self.stepValues[key]
             self.text = item[0]
             self.value = item[1]
-            self.boxRect.x = key
-
+            self.slideRect.x = key
         self.update()
 
-    def checkIfOnSelf(self, event):
-        padx = 100
+
+    def handleIfOnSelf(self, event):
         relx = event.pos[0] - self.rect.x
-        minx = self.barRect.x - padx
-        maxx = minx + self.barRect.width + padx
+        minx = self.barRect.x - self.options.sliderDragPaddingX
+        maxx = minx + self.barRect.width + self.options.sliderDragPaddingX
 
         rely = event.pos[1] - self.rect.y
-        miny = self.boxRect.y
-        maxy = miny + self.boxRect.height
+        miny = self.slideRect.y
+        maxy = miny + self.slideRect.height
 
         if (minx <= relx <= maxx and miny <= rely <= maxy):
             self.drag(relx)
 
     def notify(self, event):
         if isinstance(event, Events.DragWidgetEvent):
-            self.checkIfOnSelf(event)
+            self.handleIfOnSelf(event)
 
         if isinstance(event, Events.LeftClickWidgetEvent):
-            self.checkIfOnSelf(event)
+            self.handleIfOnSelf(event)

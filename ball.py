@@ -1,7 +1,7 @@
 import pygame, math
 from engine import Engine
 from eventManager import Events
-from bricks import *
+from brick import *
 from paddle import *
 
 class Ball(Engine.GUI.Widget):

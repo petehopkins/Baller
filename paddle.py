@@ -70,27 +70,27 @@ class Paddle(Engine.GUI.Widget):
             zone = self.rect
 
         if rect != None:
-            collision = rect.x <= zone.x <= rect.x + rect.width and \
-                        rect.y <= zone.y <= rect.y + rect.height
+            collision = (rect.x <= zone.x <= rect.x + rect.width or zone.x <= rect.x <= zone.x + zone.width) and \
+                        (rect.y <= zone.y <= rect.y + rect.height or zone.y <= rect.y <= zone.y + zone.height)
 
         return collision
 
     def redirect(self, ball):
         # figure out where collision occurred
-        if self.centerZone().colliderect(ball.centerZone()):
+        if self.collide(self.centerZone(), ball.centerZone()):
             ball.vector = 270 # towards top of screen
-            print("center")
-        elif self.leftNearZone().colliderect(ball.rect):
+        
+        elif self.collide(self.leftNearZone(), ball.rect):
             ball.vector = 225 # towards topleft of screen
-            print("left near")
-        elif self.rightNearZone().colliderect(ball.rect):
+        
+        elif self.collide(self.rightNearZone(), ball.rect):
             ball.vector = 315 # towards topright of screen
-            print("right near")
-        elif self.leftFarZone().colliderect(ball.rect):
+        
+        elif self.collide(self.leftFarZone(), ball.rect):
             ball.vector = 210 # towards lefttop of screen
-            print("left far")
-        elif self.rightFarZone().colliderect(ball.rect):
+        
+        elif self.collide(self.rightFarZone(), ball.rect):
             ball.vector = 330 # towards righttop of screen
-            print("right far")
-        print(ball.vector)
+        
+        print(self.leftFarZone(), self.leftNearZone(), self.centerZone(), self.rightNearZone(), self.rightFarZone())
 

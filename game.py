@@ -11,6 +11,7 @@ from eventManager import *
 from widgets import *
 from bricks import *
 from ball import *
+from paddle import *
 
 class Game(Engine):
     def __init__(self):
@@ -27,13 +28,16 @@ class Game(Engine):
         event = Events.ShowOptionsEvent()
         self.eventManager.addListener(event, self)
 
-        event = Events.SaveOptionsEvent()
+        event = Events.ApplyOptionsEvent()
         self.eventManager.addListener(event, self)
 
         event = Events.ResetValuesToDefaultsEvent()
         self.eventManager.addListener(event, self)
 
         event = Events.CancelOptionsEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.PauseGameEvent()
         self.eventManager.addListener(event, self)
 
     def postNewGameEvent(self):
@@ -48,8 +52,8 @@ class Game(Engine):
         event = Events.QuitEvent()
         self.eventManager.post(event)
 
-    def postSaveOptionsEvent(self):
-        event = Events.SaveOptionsEvent()
+    def postApplyOptionsEvent(self):
+        event = Events.ApplyOptionsEvent()
         self.eventManager.post(event)
 
     def postResetValuesToDefaultsEvent(self):
@@ -61,16 +65,16 @@ class Game(Engine):
         self.eventManager.post(event)
 
     def makeLevel(self):
-        screen = Engine.Layer()
+        screen = Engine.Layer(mouseVisible = False)
 
-        windowWidth = self.window.get_rect().width
-        windowHeight = self.window.get_rect().height
+        wall = Brick.createWall(self.eventManager, self.options)
+        screen.addWidget(wall)
 
-        wall = Bricks(self.eventManager, windowWidth, windowHeight)
-        screen.addSprite(wall.getPile().sprites())
+        ball = Ball(self.eventManager, screen)
+        screen.addWidget(ball)
 
-        ball = Ball(self.eventManager)
-        screen.addSprite(ball)
+        paddle = Paddle(self.eventManager)
+        screen.addWidget(paddle)
 
         return screen
 
@@ -86,7 +90,7 @@ class Game(Engine):
         sensitivityLabel.setPosition(50, 200)
         screen.addWidget(sensitivityLabel)
 
-        sensitivity = SliderWidget(self.eventManager, range(0, 100), 99)
+        sensitivity = SliderWidget(self.eventManager, "sensitivity", self.options.availableSensitivities, self.options.sensitivityValue)
         sensitivity.setPosition(530, sensitivityLabel.rect.y + 20)
         screen.addWidget(sensitivity)
 
@@ -94,11 +98,11 @@ class Game(Engine):
         difficultyLabel.setPosition(50, 300)
         screen.addWidget(difficultyLabel)
 
-        difficulty = SliderWidget(self.eventManager, self.Options.availableDifficulties, 1)
+        difficulty = SliderWidget(self.eventManager, "difficulty", self.options.availableDifficulties, 1)
         difficulty.setPosition(530, difficultyLabel.rect.y + 20)
         screen.addWidget(difficulty)
 
-        saveButton = Button(self.eventManager, "Save", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postSaveOptionsEvent)
+        saveButton = Button(self.eventManager, "Apply", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postApplyOptionsEvent)
         saveButton.setPosition(50, 500)
         screen.addWidget(saveButton)
 
@@ -113,10 +117,15 @@ class Game(Engine):
 
         return screen
 
+    def makePause(self):
+        screen = self.makeOptions()
+        screen.fillColor = self.Colors.WHITE_TRANSLUCENT
+        return screen
+
     def makeStart(self):
         screen = Engine.Layer()
 
-        title = Label(self.eventManager, self.name, self.Colors.LAVENDER)
+        title = Label(self.eventManager, self.options.name, self.Colors.LAVENDER)
         title.centerOn(self.window)
         title.setPosition(y = 200)
         screen.addWidget(title)
@@ -142,26 +151,34 @@ class Game(Engine):
 
         self.activeScreen = screenName
         screen = self.screens[self.activeScreen]
+        pygame.mouse.set_visible(screen.mouseVisible)
 
-        self.window.fill(self.windowFillColor)
+        self.window.fill(screen.fillColor)
         screen.redrawWidgets(self.window)
-        screen.redrawSprites(self.window)
 
-        event = Events.ActivateScreenEvent() # If not posted as an event, the activate method will add listeners in time for a click event to hit buttons that weren't listening at the time of the click
-        self.eventManager.post(event) #seems to indicate that pygame is muli-threaded, but we haven't started another thread so why is this acting like a race condition?
+        self.screens[self.activeScreen].activate()
 
     def notify(self, event):
-        if isinstance(event, Events.ActivateScreenEvent):
-            self.screens[self.activeScreen].activate()
-
         if isinstance(event, Events.NewGameEvent):
             self.showScreen("level")
 
         if isinstance(event, Events.ShowOptionsEvent):
             self.showScreen("options")
 
-        if isinstance(event, Events.SaveOptionsEvent):
-            self.showScreen("start")
+        if isinstance(event, Events.ApplyOptionsEvent):
+            screen = self.screens[self.activeScreen]
+
+            filterType = SliderWidget
+            sliders = screen.getWidgets(filterType)
+            for slider in sliders:
+                screen.widgetValues[slider.valueKey] = slider.value
+
+            self.applyOptions(screen.widgetValues["sensitivity"], screen.widgetValues["difficulty"])
+
+            if self.activeScreen == "pause":
+                self.showScreen("level")
+            else:
+                self.showScreen("start")
 
         if isinstance(event, Events.ResetValuesToDefaultsEvent):
             widgets = self.screens[self.activeScreen].getWidgets()
@@ -170,7 +187,14 @@ class Game(Engine):
                     widget.setValue(widget.defaultValue)
 
         if isinstance(event, Events.CancelOptionsEvent):
-            self.showScreen("start")
+            if self.activeScreen == "pause":
+                self.showScreen("level")
+            else:
+                self.showScreen("start")
+
+        if isinstance(event, Events.PauseGameEvent):
+            if self.activeScreen == "level":
+                self.showScreen("pause")
 
     @staticmethod
     def launch():
@@ -178,6 +202,7 @@ class Game(Engine):
 
         game.screens["start"] = game.makeStart()
         game.screens["options"] = game.makeOptions()
+        game.screens["pause"] = game.makePause()
         game.screens["level"] = game.makeLevel()
 
         game.activeScreen = "start"

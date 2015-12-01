@@ -111,6 +111,8 @@ class Engine():
             #Base GUI widget properties
             self.widgetPadding = 40
             self.widgetFontSize = 56
+            self.widgetCollisionZoneRatioCenter = 1 / 10
+            self.widgetCollisionZoneRatioNear = 5 / 6
 
             #Slider GUI widget
             self.sliderFontSize = 24
@@ -169,62 +171,52 @@ class Engine():
             def bottomEdge(self):
                 return self.rect.y + self.rect.height
 
-            def centerZone(self, width = 12): # allow for a wider zone, if desired
+            def centerZone(self): # allow for a wider zone, if desired
                 rect = self.image.get_rect() # get a new rect based on the image
                 rect.y = self.rect.y
 
+                width = self.rect.width * self.options.widgetCollisionZoneRatioCenter
+                
                 if self.width % 2 == 0: #even width
-                    rect.x = self.rect.width / 2
+                    rect.x = (self.rect.width / 2) - (width / 2)
                     rect.width = width
 
                 else: # odd width
-                    rect.x = (self.rect.width + 1) / 2
-                    rect.width = 1
+                    rect.x = ((self.rect.width + 1) / 2) - (width / 2)
+                    rect.width = width
 
                 return rect
 
             def leftNearZone(self):
                 centerZone = self.centerZone() # get the center zone
                 rect = self.image.get_rect() # get a new rect based on the image
+                
                 rect.y = self.rect.y
 
-                width = (centerZone.x - self.rect.x)
-
-                if width % 2 == 0: #even width
-                    rect.x = width / 2
-                    rect.width = (width / 2) - 1
-
-                else: # odd width
-                    rect.x = (width + 1) / 2
-                    rect.width = ((width + 1) / 2) - 1
+                rect.width = (centerZone.x - rect.x) * self.options.widgetCollisionZoneRatioNear
+                rect.x = centerZone.x - rect.width
 
                 return rect
 
             def leftFarZone(self):
                 leftNearZone = self.leftNearZone() # get the leftNear zone
                 rect = self.image.get_rect() # get a new rect based on the image
-                rect.y = self.rect.y
-
-                width = (leftNearZone.x - self.rect.x)
 
                 rect.x = self.rect.x
-                rect.width = width - 1
+                rect.y = self.rect.y
+
+                rect.width = (leftNearZone.x - rect.x)
 
                 return rect
 
             def rightNearZone(self):
                 centerZone = self.centerZone() # get the center zone
                 rect = self.image.get_rect() # get a new rect based on the image
-                rect.y = self.rect.y
+
                 rect.x = centerZone.x + centerZone.width
+                rect.y = self.rect.y
 
-                width = self.rightEdge() - (centerZone.x + centerZone.width)
-
-                if width % 2 == 0: #even width
-                    rect.width = (width / 2) - 1
-
-                else: # odd width
-                    rect.width = ((width + 1) / 2) - 1
+                rect.width = (self.rightEdge() - (centerZone.x + centerZone.width)) * self.options.widgetCollisionZoneRatioNear
 
                 return rect
 
@@ -234,7 +226,7 @@ class Engine():
 
                 rect.y = self.rect.y
                 rect.x = rightNearZone.x + rightNearZone.width
-                rect.width = self.rightEdge() - (rightNearZone.x + rightNearZone.width)
+                rect.width = self.rightEdge() - rect.x
 
                 return rect
 

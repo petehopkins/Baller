@@ -9,8 +9,8 @@ import pygame
 from engine import *
 from eventManager import *
 from widgets import *
-from bricks import *
 from ball import *
+from brick import *
 from paddle import *
 
 class Game(Engine):

@@ -13,15 +13,13 @@ class Brick(Engine.GUI.Widget):
 
         self.eventManager = eventManager
 
-        self.borderWidth = 2
-        self.hitsRemaining = 1
-        self.x = position[0]
-        self.y = position[1]
-        self.size = 25
-        self.whRatio = {"width": 2, "height": 1}
-        self.width = self.size * self.whRatio["width"]
-        self.height = self.size * self.whRatio["height"]
-        self.hitsRemaining = 1
+        self.isCollidable = True
+
+        self.width = self.options.brickWidth
+        self.height = self.options.brickHeight
+        self.borderWidth = self.options.brickBorderWidth
+        self.hitsRemaining = self.options.brickHitsRemaining
+
         self.isInPlay = True
 
         if fill != None:
@@ -36,8 +34,8 @@ class Brick(Engine.GUI.Widget):
 
         self.image = pygame.Surface((self.width, self.height))
         self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
+        self.rect.x = position[0]
+        self.rect.y = position[1]
 
         self.inner = pygame.Surface((self.width - (self.borderWidth * 2), self.height - (self.borderWidth * 2)))
         self.innerRect = self.inner.get_rect()
@@ -45,6 +43,31 @@ class Brick(Engine.GUI.Widget):
         self.innerRect.y = (self.rect.height / 2) - (self.innerRect.height / 2)
 
         self.redrawBrick()
+
+    @staticmethod
+    def createWall(eventManager, options):
+        pile = pygame.sprite.Group()
+
+        ballparkWide = options.brickWallWidth // options.brickWidth
+        ballparkHigh = options.brickWallHeight // options.brickHeight
+
+        whitespaceWide = options.brickWallMortarGap + (options.brickWallMortarGap * ballparkWide)
+        whitespaceHigh = options.brickWallMortarGap + (options.brickWallMortarGap * ballparkHigh)
+
+        bricksWide = (options.brickWallWidth - whitespaceWide) // options.brickWidth
+        bricksHigh = (options.brickWallHeight - whitespaceHigh) // options.brickHeight
+
+        borderSpace = (options.brickWallWidth - (bricksWide * options.brickWidth) - whitespaceWide) // 2
+        leftBorder = borderSpace + options.brickWallMortarGap
+        rightBorder = options.brickWallWidth - borderSpace - options.brickWallMortarGap
+
+        for x in range(0, bricksWide):
+            for y in range(0, bricksHigh):
+                position = [leftBorder + options.brickWallMortarGap + ((options.brickWidth + options.brickWallMortarGap) * x), options.brickWallMortarGap + ((options.brickHeight + options.brickWallMortarGap) * y)]
+                brick = Brick(eventManager, position)
+                pile.add(brick)
+
+        return pile.sprites()
 
     def notify(self, event):
         if isinstance(event, Events.CollisionEvent):
@@ -67,6 +90,7 @@ class Brick(Engine.GUI.Widget):
 
     def removeFromPlay(self):
         self.isInPlay = False #set flag
+        self.kill()
 
     def redrawBrick(self):
         self.image.fill(self.border)
@@ -74,8 +98,15 @@ class Brick(Engine.GUI.Widget):
         self.image.blit(self.inner, self.innerRect)
 
     def animate(self):
-        if self.hitsRemaining == 1:
+        if self.hitsRemaining == 3:
+            self.fill = Engine.Colors.DARK_BLUE
+
+        elif self.hitsRemaining == 2:
             self.fill = Engine.Colors.LAVENDER
+
+        elif self.hitsRemaining == 1:
+            self.fill = Engine.Colors.LIGHT_GREY
+
         elif self.hitsRemaining == 0:
             self.fill = Engine.Colors.GREY
         else:

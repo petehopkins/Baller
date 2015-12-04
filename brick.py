@@ -22,15 +22,8 @@ class Brick(Engine.GUI.Widget):
 
         self.isInPlay = True
 
-        if fill != None:
-            self.fill = fill
-        else:
-            self.fill = Engine.Colors.LAVENDER
-
-        if border != None:
-            self.border = border
-        else:
-            self.border = Engine.Colors.BLACK
+        self.fill = fill if fill != None else Engine.Colors.GREY
+        self.border = border if border != None else Engine.Colors.BLACK
 
         self.image = pygame.Surface((self.width, self.height))
         self.rect = self.image.get_rect()
@@ -42,6 +35,7 @@ class Brick(Engine.GUI.Widget):
         self.innerRect.x = (self.rect.width / 2) - (self.innerRect.width / 2)
         self.innerRect.y = (self.rect.height / 2) - (self.innerRect.height / 2)
 
+        self.animate()
         self.redrawBrick()
 
     @staticmethod
@@ -54,16 +48,17 @@ class Brick(Engine.GUI.Widget):
         whitespaceWide = options.brickWallMortarGap + (options.brickWallMortarGap * ballparkWide)
         whitespaceHigh = options.brickWallMortarGap + (options.brickWallMortarGap * ballparkHigh)
 
-        bricksWide = (options.brickWallWidth - whitespaceWide) // options.brickWidth
-        bricksHigh = (options.brickWallHeight - whitespaceHigh) // options.brickHeight
+        bricksWide = int(options.brickWallWidth - whitespaceWide) // options.brickWidth
+        bricksHigh = int(options.brickWallHeight - whitespaceHigh) // options.brickHeight
 
         borderSpace = (options.brickWallWidth - (bricksWide * options.brickWidth) - whitespaceWide) // 2
-        leftBorder = borderSpace + options.brickWallMortarGap
+        leftBorder = options.brickWallMinimumOffset + borderSpace + options.brickWallMortarGap
         rightBorder = options.brickWallWidth - borderSpace - options.brickWallMortarGap
+        topBorder = options.brickWallMinimumOffset
 
         for x in range(0, bricksWide):
             for y in range(0, bricksHigh):
-                position = [leftBorder + options.brickWallMortarGap + ((options.brickWidth + options.brickWallMortarGap) * x), options.brickWallMortarGap + ((options.brickHeight + options.brickWallMortarGap) * y)]
+                position = [leftBorder + options.brickWallMortarGap + ((options.brickWidth + options.brickWallMortarGap) * x), topBorder + options.brickWallMortarGap + ((options.brickHeight + options.brickWallMortarGap) * y)]
                 brick = Brick(eventManager, position)
                 pile.add(brick)
 

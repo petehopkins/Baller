@@ -21,16 +21,21 @@ class Ball(Engine.GUI.Widget):
         self.width = self.options.ballRadius * 2
         self.height = self.width
 
+        self.x = self.options.ballInitialPosition[0]
+        self.y = self.options.ballInitialPosition[1]
+
         #making a square ball for now
         self.image = pygame.Surface((self.options.ballRadius * 2, self.options.ballRadius * 2))
         self.image.fill(self.color)
 
         self.rect = self.image.get_rect()
-        self.rect.x = self.options.ballInitialPosition[0] - self.radius
+        self.rect.x =  - self.radius
         self.rect.y = self.options.ballInitialPosition[1] - self.radius
 
         self.group = pygame.sprite.GroupSingle()
         self.group.add(self)
+
+        self.log = False
 
     def update(self):
         x = self.rect.x
@@ -56,24 +61,28 @@ class Ball(Engine.GUI.Widget):
             self.move(self.speed)
             self.checkForCollisions()
 
-    def handleOverlap(self, xOverlap, yOverlap):
+    def handleOverlap(self, xOverlap, yOverlap, isPaddle):
         #figure out which overlap is further into the brick with an edge case of equally
         overlap = 0
         normalAxis = 180 # default to top/bottom collisions
 
-        # sanity check for overlap as it should never be greater than the speed of the ball
-        if xOverlap > self.speed:
-            xOverlap = 0 # ignore overlap
+        if not isPaddle:
+            # sanity check for overlap as it should never be greater than the speed of the ball
+            # this is invalid for paddle collisions as the paddle moves independently of the ball at it's own rate
+            if xOverlap > self.speed:
+                xOverlap = 0 # ignore overlap
 
-        if yOverlap > self.speed:
-            yOverlap =0 # ignore overlap
+            if yOverlap > self.speed:
+                yOverlap = 0 # ignore overlap
+        else:
+            xOverlap = 0 # it's the paddle, so we only care about the yOverlap if it exists
 
         if yOverlap > xOverlap: # collision likely came from top/bottom
             overlap = yOverlap
 
-        elif xOverlap > yOverlap: # collsions likely came from left.right
+        elif xOverlap > yOverlap: # collsions likely came from left/right
             overlap = xOverlap
-            normalAxis = 360
+            normalAxis = 360 # change normal axis to vertical
 
         else: # edge case of equal, so which one doesn't matter
             overlap = xOverlap
@@ -82,52 +91,53 @@ class Ball(Engine.GUI.Widget):
 
         return normalAxis
 
-    def bounce(self, bounces, normalAxis, bricks, spin = None):
+    def bounce(self, bounces, normalAxis, collidableObjects, isPaddle = False, spin = None):
         # recheck position and move ball outside of (or to the edge of) the collision zone to prevent multiple bounces on the same object per hit
         # otherwise vectors can get messed up as the ball bounces off the object going into it and then again (and again and again, etc.)
         # while exiting the collision zone
 
         normals = []
 
-        if self.leftEdge() < 0:
-            self.rect.x = 0 # left edge is past window, clamp to left edge of window
+        if self.leftEdge() < self.options.levelZoneGamePlay["x"]:
+            self.x = self.options.levelZoneGamePlay["x"] # left edge is past window, clamp to left edge of window
 
-        if self.rightEdge() > self.options.windowWidth:
-            self.rect.x = self.options.windowWidth - self.rect.width # right edge is past window, clamp to right edge of window
+        if self.rightEdge() > self.options.levelZoneGamePlay["x"] + self.options.levelZoneGamePlay["width"]:
+            self.x = (self.options.levelZoneGamePlay["x"] + self.options.levelZoneGamePlay["width"]) - self.rect.width # right edge is past window, clamp to right edge of window
 
-        if self.topEdge() < 0:
-            self.rect.y = 0 # top edge is past window, clamp to top edge of window
+        if self.topEdge() < self.options.levelZoneGamePlay["y"]:
+            self.y = self.options.levelZoneGamePlay["y"] # top edge is past window, clamp to top edge of window
 
-        if self.bottomEdge() > self.options.windowHeight:
-             self.rect.y = self.options.windowHeight - self.rect.height # bottom edge is past window, clamp to bottom edge of window
+        if self.bottomEdge() > self.options.levelZoneGamePlay["y"] + self.options.levelZoneGamePlay["height"]:
+            self.y = (self.options.levelZoneGamePlay["y"] + self.options.levelZoneGamePlay["height"]) - self.rect.height # bottom edge is past window, clamp to bottom edge of window
 
-        # now do the same for the bricks and the paddle (which would be in bricks as it is a collidable object)
-        for brick in bricks:
-            if brick.rect.collidepoint(self.rect.topleft):
-                # topleft is within the brick
-                xOverlap = abs(brick.rightEdge() - self.leftEdge())
-                yOverlap = abs(brick.bottomEdge() - self.topEdge())
-                normals.append(self.handleOverlap(xOverlap, yOverlap))
+        # now do the same for the bricks and the paddle (both of which are collidable objects)
+        for co in collidableObjects:
+            if co.rect.collidepoint(self.rect.topleft):
+                # topleft is within the collidable object
+                xOverlap = abs(co.rightEdge() - self.leftEdge())
+                yOverlap = abs(co.bottomEdge() - self.topEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap, isPaddle))
 
-            if brick.rect.collidepoint(self.rect.topright):
-                # topright is within the brick
-                xOverlap = abs(brick.leftEdge() - self.rightEdge())
-                yOverlap = abs(brick.bottomEdge() - self.topEdge())
-                normals.append(self.handleOverlap(xOverlap, yOverlap))
+            if co.rect.collidepoint(self.rect.topright):
+                # topright is within the collidable object
+                xOverlap = abs(co.leftEdge() - self.rightEdge())
+                yOverlap = abs(co.bottomEdge() - self.topEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap, isPaddle))
 
-            if brick.rect.collidepoint(self.rect.bottomright):
-                # bottomright is within the brick
-                xOverlap = abs(brick.leftEdge() - self.rightEdge())
-                yOverlap = abs(brick.topEdge() - self.bottomEdge())
-                normals.append(self.handleOverlap(xOverlap, yOverlap))
+            if co.rect.collidepoint(self.rect.bottomright):
+                # bottomright is within the collidable object
+                xOverlap = abs(co.leftEdge() - self.rightEdge())
+                yOverlap = abs(co.topEdge() - self.bottomEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap, isPaddle))
 
-            if brick.rect.collidepoint(self.rect.bottomleft):
-                # bottomleft is within the brick
-                xOverlap = abs(brick.rightEdge() - self.leftEdge())
-                yOverlap = abs(brick.topEdge() - self.bottomEdge())
-                normals.append(self.handleOverlap(xOverlap, yOverlap))
+            if co.rect.collidepoint(self.rect.bottomleft):
+                # bottomleft is within the collidable object
+                xOverlap = abs(co.rightEdge() - self.leftEdge())
+                yOverlap = abs(co.topEdge() - self.bottomEdge())
+                normals.append(self.handleOverlap(xOverlap, yOverlap, isPaddle))
 
-            brick.collide() # may as well notify the object of a collision here so we don't have to loop through twice
+            co.collide() # may as well notify the object of a collision here so we don't have to loop through twice
+##            self.log = co.bottomEdge() < 30 # DEBUG POINT: Remove later
 
         #finally, change vector, angle of incidence = angle of reflection, may need to change rotation (counter/clockwise) on paddle hit or ball spin
         if len(normals) > 0: # multiple bounces passed in, bounce once prioritizing vertical travel
@@ -151,16 +161,20 @@ class Ball(Engine.GUI.Widget):
         collidableObjects = pygame.sprite.Group()
 
         #check for boundary collisions
-        if self.topEdge() <= 0:
+        if self.topEdge() <= self.options.levelZoneGamePlay["y"]:
+##            self.log = True
             self.bounce(1, 180, collidableObjects)
 
-        if self.rightEdge() >= self.options.windowWidth:
+        if self.rightEdge() >= self.options.levelZoneGamePlay["x"] + self.options.levelZoneGamePlay["width"]:
+##            self.log = True
             self.bounce(1, 360, collidableObjects)
 
-        if self.bottomEdge() >= self.options.windowHeight: #once algorithm is abstracted / finalized, lose a ball instead
+        if self.bottomEdge() >= self.options.levelZoneGamePlay["y"] + self.options.levelZoneGamePlay["height"]: #once algorithm is abstracted / finalized, lose a ball instead
+##            self.log = True
             self.bounce(1, 180, collidableObjects)
 
-        if self.leftEdge() <= 0:
+        if self.leftEdge() <= self.options.levelZoneGamePlay["x"]:
+##            self.log = True
             self.bounce(1, 360, collidableObjects)
 
         #check for bricks
@@ -183,11 +197,16 @@ class Ball(Engine.GUI.Widget):
         bounces += len(collidableObjects)
 
         if bounces > 0:
-            self.bounce(bounces, 180, collidableObjects) # pass in to handle basic collision and overlaps
-            for paddle in collidableObjects:
-                paddle.redirect(self)
+            self.log = True
+            #self.bounce(bounces, 180, collidableObjects, isPaddle = True) # pass in paddle to handle basic collision and overlaps
+            for paddle in collidableObjects: # should only be one, but this allows for multiple paddles later if we want to do that sort of thing
+                self.bottomEdge(paddle.topEdge()) # always set the bottom edge of the ball to the top edge of the paddle
+                paddle.redirect(self) # set the new vector
 
-    def move(self, distance, assureMovement = False):
+    def move(self, distance, assureMovement = None):
+        if assureMovement == None:
+            assureMovement = self.options.difficulty == 0
+
         vector = math.radians(self.vector)
 
         dx = distance * math.cos(vector)
@@ -202,5 +221,15 @@ class Ball(Engine.GUI.Widget):
                 sign = dy / abs(dy)
                 dy = 1 * sign
 
-        self.rect.x += dx
-        self.rect.y += dy
+        # this will keep track of x,y seperately and account for fractional pixel movement
+        self.x += dx
+        self.y += dy
+
+        # assigning a fractional value to a pygame.Rect will apparently truncate the fraction, hence the need for separate storage above
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+##        if self.log:
+##            print("vector: {0}".format(self.vector))
+##            print("x:      rendered: {0}, delta: {1: 3f}, tracked: {2: 3f}".format(self.rect.x, dx, self.x))
+##            print("y:      rendered: {0}, delta: {1: 3f}, tracked: {2: 3f}".format(self.rect.y, dy, self.y))

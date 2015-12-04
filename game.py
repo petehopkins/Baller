@@ -98,7 +98,7 @@ class Game(Engine):
         difficultyLabel.setPosition(50, 300)
         screen.addWidget(difficultyLabel)
 
-        difficulty = SliderWidget(self.eventManager, "difficulty", self.options.availableDifficulties, 1)
+        difficulty = SliderWidget(self.eventManager, "difficulty", self.options.availableDifficulties, self.options.difficultyValue)
         difficulty.setPosition(530, difficultyLabel.rect.y + 20)
         screen.addWidget(difficulty)
 
@@ -148,6 +148,7 @@ class Game(Engine):
     def showScreen(self, screenName):
         screen = self.screens[self.activeScreen]
         screen.deactivate()
+        self.sleep() # allow event processing to occur outside of the pygame engine
 
         self.activeScreen = screenName
         screen = self.screens[self.activeScreen]

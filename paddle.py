@@ -10,8 +10,8 @@ class Paddle(Engine.GUI.Widget):
         self.width = self.options.paddleWidth
         self.height = self.options.paddleHeight
 
-        self.minx = self.options.paddleLeftBound
-        self.maxx = self.options.windowWidth - self.options.paddleRightBound - self.width
+        self.minx = self.options.levelZonePaddleArea["x"] + self.options.paddleLeftBound
+        self.maxx = (self.options.levelZonePaddleArea["x"] + self.options.levelZonePaddleArea["width"]) - (self.width + self.options.paddleRightBound)
 
         self.x = self.options.paddleX
 
@@ -45,6 +45,8 @@ class Paddle(Engine.GUI.Widget):
                 self.move(event.pos[0])
 
     def update(self):
+        self.minx = self.options.levelZonePaddleArea["x"] + self.options.paddleLeftBound
+        self.maxx = (self.options.levelZonePaddleArea["x"] + self.options.levelZonePaddleArea["width"]) - (self.width + self.options.paddleRightBound)
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(self.color)
         self.rect = self.image.get_rect()
@@ -76,21 +78,25 @@ class Paddle(Engine.GUI.Widget):
         return collision
 
     def redirect(self, ball):
+        oldVector = ball.vector
+
         # figure out where collision occurred
         if self.collide(self.centerZone(), ball.centerZone()):
             ball.vector = 270 # towards top of screen
-        
+
         elif self.collide(self.leftNearZone(), ball.rect):
             ball.vector = 225 # towards topleft of screen
-        
+
         elif self.collide(self.rightNearZone(), ball.rect):
             ball.vector = 315 # towards topright of screen
-        
+
         elif self.collide(self.leftFarZone(), ball.rect):
             ball.vector = 210 # towards lefttop of screen
-        
+
         elif self.collide(self.rightFarZone(), ball.rect):
             ball.vector = 330 # towards righttop of screen
-        
-        print(self.leftFarZone(), self.leftNearZone(), self.centerZone(), self.rightNearZone(), self.rightFarZone())
+
+##        ls = [self.rect, self.leftFarZone(), self.leftNearZone(), self.centerZone(), self.rightNearZone(), self.rightFarZone()]
+##        for rect in ls:
+##            print("x x+w w y y+h h: ", rect.x, rect.x + rect.width, rect.width, rect.y, rect.y + rect.height, rect.height)
 

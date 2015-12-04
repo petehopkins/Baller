@@ -25,10 +25,23 @@ class Engine():
     Your planet needs you!
             '''
 
-            #clock
+            # clock
             self.tickSpeed = 60
 
-            #difficulty
+            # window properties
+            self.windowWidth = 800
+            self.windowHeight = 600
+            self.windowSize = (self.windowWidth, self.windowHeight)
+            self.windowFillColor = Engine.Colors.WHITE
+
+            # level properties
+            self.__infoZoneHeight = 100
+            self.__paddleAreaHeight = 100
+            self.levelZoneInfo = {"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
+            self.levelZoneGamePlay = {"x": 0, "y": 0, "width": self.windowWidth, "height": self.windowHeight - self.levelZoneInfo["height"]}
+            self.levelZonePaddleArea = {"x": 0, "y": self.levelZoneGamePlay["height"] - self.__paddleAreaHeight, "width": self.windowWidth, "height": self.__paddleAreaHeight}
+
+            # difficulty
             self.availableDifficulties = [("Easy", 0), ("Normal", 1), ("Hard", 2), ("Brutal", 3)]
             self.defaultDifficultyValue = 1
             self.difficultyValue = self.defaultDifficultyValue
@@ -58,7 +71,7 @@ class Engine():
                     "ballSpeed": 16
                 }}
 
-            #Mouse / Keyboard(?) sensitivity
+            # Mouse / Keyboard(?) sensitivity
             sensitivities = []
             for s in range(10, 0, -1):
                 text = "Every {0} ticks"
@@ -71,22 +84,7 @@ class Engine():
             self.defaultSensitivityValue = 1
             self.sensitivityValue = self.defaultSensitivityValue
 
-            #window properties
-            self.windowWidth = 800
-            self.windowHeight = 600
-            self.windowSize = (self.windowWidth, self.windowHeight)
-            self.windowFillColor = Engine.Colors.WHITE
-
-            #paddle properties
-            self.paddleWidth = self.difficulty[self.difficultyValue]["paddleWidth"]
-            self.paddleHeight = 25
-            self.paddleLeftBound = 10
-            self.paddleRightBound = self.paddleLeftBound
-            self.paddleColor = Engine.Colors.DARK_BLUE
-            self.paddleX = (self.windowWidth / 2) - (self.paddleWidth / 2)
-            self.paddleY = 550
-
-            #brick properties
+            # brick properties
             self.brickWidthHeightRatio = {"width": 2, "height": 1} # only ever used in this class to determine width and height
             self.brickSize = 25 # only ever used in this class to determine width and height
 
@@ -95,26 +93,40 @@ class Engine():
             self.brickBorderWidth = 2
             self.brickHitsRemaining = self.difficulty[self.difficultyValue]["brickHitsRemaining"]
 
-            #brick wall properties
-            self.brickWallWidth = self.windowWidth
-            self.brickWallHeight = self.windowHeight - 200
-            self.brickWallMortarGap = 2
-
-            #ball properties
+            # ball properties
             self.ballSpeed = self.difficulty[self.difficultyValue]["ballSpeed"]
             self.ballRadius = self.difficulty[self.difficultyValue]["ballRadius"]
             self.ballVectorInitial = -45
             self.ballGyreDirection = 180
             self.ballColor = Engine.Colors.BRIGHT_RED
-            self.ballInitialPosition = (self.windowWidth / 2, self.windowHeight - 100)
+            self.ballInitialPosition = ((self.levelZonePaddleArea["x"] + self.levelZonePaddleArea["width"]) / 2, self.levelZonePaddleArea["y"] + (self.ballRadius * 3))
 
-            #Base GUI widget properties
+            # paddle properties
+            self.paddleWidth = self.difficulty[self.difficultyValue]["paddleWidth"]
+            self.paddleHeight = 25
+            self.paddleLeftBound = self.ballRadius
+            self.paddleRightBound = self.paddleLeftBound
+            self.paddleColor = Engine.Colors.DARK_BLUE
+            self.paddleX = ((self.levelZonePaddleArea["x"] + self.levelZonePaddleArea["width"]) / 2) - (self.paddleWidth / 2)
+            self.paddleY = (self.levelZonePaddleArea["y"] + self.levelZonePaddleArea["height"]) - (self.paddleHeight + (self.ballRadius / 2))
+
+            # brick wall properties
+            self.brickWallMinimumOffset = (self.ballRadius * 2)
+            self.brickWallWidth = self.levelZoneGamePlay["width"] - (self.brickWallMinimumOffset * 2)
+            self.brickWallHeight = self.levelZoneGamePlay["height"] - self.__paddleAreaHeight - self.brickWallMinimumOffset
+            self.brickWallMortarGap = 2
+
+            # Base GUI widget properties
             self.widgetPadding = 40
             self.widgetFontSize = 56
             self.widgetCollisionZoneRatioCenter = 1 / 10
-            self.widgetCollisionZoneRatioNear = 5 / 6
+            self.widgetCollisionZoneRatioNear = 2 / 3
 
-            #Slider GUI widget
+            # Label GUI Widget properties
+            self.labelWidgetTextColor = Engine.Colors.BLACK
+            self.labelWidgetBackgroundColor = Engine.Colors.WHITE
+
+            # Slider GUI widget
             self.sliderFontSize = 24
             self.sliderWidth = 200
             self.sliderHeight = 72
@@ -125,6 +137,9 @@ class Engine():
             self.sliderSlideHeight = 40
             self.sliderTextOffsetY = 8
             self.sliderDragPaddingX = 100
+            self.sliderWidgetTextColor = Engine.Colors.BLACK
+            self.sliderWidgetFillColor = Engine.Colors.LIGHT_GREY
+            self.sliderWidgetBackgroundColor =  Engine.Colors.WHITE
 
     class GUI():
         def __init__(self):
@@ -159,42 +174,55 @@ class Engine():
                 onY = surfRect.y + (surfRect.height / 2) - (self.rect.height / 2)
                 self.setPosition(onX, onY)
 
-            def leftEdge(self):
+            def get_rect(self):
+                return self.rect
+
+            def leftEdge(self, x = None):
+                if x != None:
+                    self.rect.x = x # set x
+
                 return self.rect.x
 
-            def rightEdge(self):
+            def rightEdge(self, x = None):
+                if x != None:
+                    self.rect.x = (x - self.rect.width) # set x
+
                 return self.rect.x + self.rect.width
 
-            def topEdge(self):
+            def topEdge(self, y = None):
+                if y != None:
+                    self.rect.y = y # set y
+
                 return self.rect.y
 
-            def bottomEdge(self):
+            def bottomEdge(self, y = None):
+                if y != None:
+                    self.rect.y = (y - self.rect.height) # set y
+
                 return self.rect.y + self.rect.height
 
             def centerZone(self): # allow for a wider zone, if desired
                 rect = self.image.get_rect() # get a new rect based on the image
                 rect.y = self.rect.y
 
-                width = self.rect.width * self.options.widgetCollisionZoneRatioCenter
-                
+                rect.width = self.rect.width * self.options.widgetCollisionZoneRatioCenter
+
                 if self.width % 2 == 0: #even width
-                    rect.x = (self.rect.width / 2) - (width / 2)
-                    rect.width = width
+                    rect.x = self.rect.x + ((self.rect.width / 2) - (rect.width / 2))
 
                 else: # odd width
-                    rect.x = ((self.rect.width + 1) / 2) - (width / 2)
-                    rect.width = width
+                    rect.x = self.rect.x + ((self.rect.width + 1) / 2) - (rect.width / 2)
 
                 return rect
 
             def leftNearZone(self):
                 centerZone = self.centerZone() # get the center zone
                 rect = self.image.get_rect() # get a new rect based on the image
-                
+
                 rect.y = self.rect.y
 
-                rect.width = (centerZone.x - rect.x) * self.options.widgetCollisionZoneRatioNear
-                rect.x = centerZone.x - rect.width
+                rect.width = (centerZone.x - self.rect.x) * self.options.widgetCollisionZoneRatioNear
+                rect.x = (centerZone.x - rect.width)
 
                 return rect
 
@@ -239,6 +267,9 @@ class Engine():
                 self.container = None
                 del self.container
                 pygame.sprite.Sprite.kill(self)
+
+            def addListeners(self):
+                pass
 
             def removeListeners(self):
                 listeners = self.eventManager.getListeners()
@@ -305,8 +336,11 @@ class Engine():
             if isinstance(event, Events.TickEvent):
                 self.engine.clock.tick(self.engine.options.tickSpeed)
                 self.engine.redrawWindow() #redraw sprites
-                pygame.time.wait(0) # CRITICAL: sleep for the minimum amount of time. DO NOT REMOVE THIS LINE
+                self.eventManager.game.sleep() # CRITICAL: sleep for the minimum amount of time. DO NOT REMOVE THIS LINE
                 pygame.display.update() #redraw screen
+
+    def sleep(self, time = 0):
+        pygame.time.wait(time)
 
     def applyOptions(self, newSensitivity, newDifficulty):
         from ball import Ball
@@ -326,6 +360,10 @@ class Engine():
         self.options.brickHitsRemaining = self.options.difficulty[self.options.difficultyValue]["brickHitsRemaining"]
         self.options.ballSpeed = self.options.difficulty[self.options.difficultyValue]["ballSpeed"]
         self.options.ballRadius = self.options.difficulty[self.options.difficultyValue]["ballRadius"]
+
+        # ball size has probably changed, update the bounds for the paddle
+        self.options.paddleLeftBound = self.options.ballRadius / 2
+        self.options.paddleRightBound = self.options.paddleLeftBound
 
         if self.screens:
             if self.screens["level"]:

@@ -2,21 +2,12 @@ import pygame
 from engine import *
 from eventManager import *
 
-class HoverableWidget(Engine.GUI.Widget):
-    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, onHoverAction = None, container = None):
+class Label(Engine.GUI.Widget):
+    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, container = None):
         super().__init__(eventManager, container)
 
-        if textColor:
-            self.textColor = textColor
-        else:
-            self.textColor = Engine.Colors.BLACK
-
-        if backgroundColor == None:
-            backgroundColor = Engine.Colors.WHITE
-
-        self.backgroundColor = backgroundColor
-        self.unfocusedBackgroundColor = self.backgroundColor
-        self.focusedBackgroundColor = self.getFocusedColor(self.backgroundColor)
+        self.textColor = textColor if textColor != None else self.options.labelWidgetTextColor
+        self.backgroundColor = backgroundColor if backgroundColor != None else self.options.labelWidgetBackgroundColor
 
         self.font = pygame.font.Font(None, self.options.widgetFontSize)
         self.text = text
@@ -35,18 +26,6 @@ class HoverableWidget(Engine.GUI.Widget):
             self.height = self.rect.height + self.options.widgetPadding
             self.rect.height = self.height
 
-        if onHoverAction:
-            self.onHoverAction = onHoverAction
-        else:
-            self.onHoverAction = self.changeBackground
-
-    def get_rect(self):
-        return self.rect
-
-    def addListeners(self):
-        event = Events.HoverWidgetEvent()
-        self.eventManager.addListener(event, self)
-
     def redrawWidget(self):
         self.dirty = True
         self.image = pygame.Surface((self.width, self.height))
@@ -59,6 +38,27 @@ class HoverableWidget(Engine.GUI.Widget):
         self.textRect.y = (self.height / 2) - (self.textRect.height / 2)
 
         self.image.blit(self.renderedText, self.textRect)
+
+    def update(self):
+        if self.dirty:
+            self.redrawWidget()
+            self.dirty = False
+
+class HoverableWidget(Label):
+    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, onHoverAction = None, container = None):
+        super().__init__(eventManager, text, textColor, backgroundColor, width, height, container)
+
+        self.unfocusedBackgroundColor = self.backgroundColor
+        self.focusedBackgroundColor = self.getFocusedColor(self.backgroundColor)
+
+        if onHoverAction:
+            self.onHoverAction = onHoverAction
+        else:
+            self.onHoverAction = self.changeBackground
+
+    def addListeners(self):
+        event = Events.HoverWidgetEvent()
+        self.eventManager.addListener(event, self)
 
     def getContrastingShade(self, color):
         constrastingShadeOffset = .2 * 255
@@ -97,11 +97,6 @@ class HoverableWidget(Engine.GUI.Widget):
 
         self.update()
 
-    def update(self):
-        if self.dirty:
-            self.redrawWidget()
-            self.dirty = False
-
     def hover(self, focused):
         if self.onHoverAction:
             self.dirty = True
@@ -113,11 +108,6 @@ class HoverableWidget(Engine.GUI.Widget):
         if isinstance(event, Events.HoverWidgetEvent):
             focused = self.rect.collidepoint(event.pos)
             self.hover(focused)
-
-Label = HoverableWidget #Friendly alias for HoverableWidget
-##class Label(HoverableWidget):
-##    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, container = None, onHoverAction = None):
-##        super().__init__(eventManager, text, textColor, backgroundColor, container, onHoverAction)
 
 class Button(HoverableWidget):
     def __init__(self, eventManager, text, textColor = None, buttonColor = None, onClickAction = None, onHoverAction = None, container = None):
@@ -146,20 +136,15 @@ class Button(HoverableWidget):
             self.click()
 
 class SliderWidget(Engine.GUI.Widget):
-    def __init__(self, eventManager, valueKey, values, defaultValue, textColor = None, backgroundColor = None, container = None, onDragAction = None):
+    def __init__(self, eventManager, valueKey, values, defaultValue, textColor = None, fillColor = None, backgroundColor = None, onDragAction = None, container = None):
         super().__init__(eventManager, container)
 
         self.eventManager = eventManager
 
-        if textColor:
-            self.textColor = textColor
-        else:
-            self.textColor = Engine.Colors.BLACK
+        self.textColor = textColor if textColor != None else self.options.sliderWidgetTextColor
+        self.fillColor = fillColor if fillColor != None else self.options.sliderWidgetFillColor
+        self.backgroundColor = backgroundColor if backgroundColor != None else self.options.sliderWidgetBackgroundColor
 
-        if backgroundColor == None:
-            backgroundColor = Engine.Colors.WHITE
-
-        self.backgroundColor = backgroundColor
         self.width = self.options.sliderWidth
         self.height = self.options.sliderHeight
 
@@ -171,22 +156,19 @@ class SliderWidget(Engine.GUI.Widget):
 
         self.font = pygame.font.Font(None, self.options.sliderFontSize)
 
-        if onDragAction:
-            self.onDragAction = onDragAction
-        else:
-            self.onDragAction = self.slideToValue
+        self.onDragAction = onDragAction if onDragAction != None else self.slideToValue
 
         self.image = pygame.Surface((self.width, self.height)) #contains bar, slide and text; all are defined here for initial positioning
         self.rect = self.image.get_rect()
 
         self.bar = pygame.Surface((self.options.sliderWidth, self.options.sliderBarHeight))
-        self.bar.fill(Engine.Colors.LIGHT_GREY)
+        self.bar.fill(self.fillColor)
         self.barRect = self.bar.get_rect()
         self.barRect.x = self.options.sliderBarOffsetX
         self.barRect.y = self.options.sliderBarOffsetY
 
         self.slide = pygame.Surface((self.options.sliderSlideWidth, self.options.sliderSlideHeight))
-        self.slide.fill(Engine.Colors.LIGHT_GREY)
+        self.slide.fill(self.fillColor)
         self.slideRect = self.slide.get_rect()
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
@@ -226,10 +208,10 @@ class SliderWidget(Engine.GUI.Widget):
         self.image.fill(self.backgroundColor)
 
         self.bar = pygame.Surface((self.options.sliderWidth, self.options.sliderBarHeight))
-        self.bar.fill(Engine.Colors.LIGHT_GREY)
+        self.bar.fill(self.fillColor)
 
         self.slide = pygame.Surface((self.options.sliderSlideWidth, self.options.sliderSlideHeight))
-        self.slide.fill(Engine.Colors.LIGHT_GREY)
+        self.slide.fill(self.fillColor)
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()

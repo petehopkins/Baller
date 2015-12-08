@@ -12,6 +12,11 @@ class Engine():
         GREY = (128, 128, 128, 255)
         BLACK = (0, 0, 0, 255)
 
+    class Stats():
+        BALLS_REMAINING = "Balls Remaining"
+        SCORE = "Score"
+
+
     class Options():
         def __init__(self):
             self.name = "Baller" #"Defeat the oppressive war machine of the evil Quadratic invaders!"
@@ -34,11 +39,15 @@ class Engine():
             self.windowSize = (self.windowWidth, self.windowHeight)
             self.windowFillColor = Engine.Colors.WHITE
 
+            # Game Stats
+            self.ballsRemaining = 3
+            self.score = 0
+
             # level properties
             self.__infoZoneHeight = 100
             self.__paddleAreaHeight = 100
-            self.levelZoneInfo = {"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
-            self.levelZoneGamePlay = {"x": 0, "y": 0, "width": self.windowWidth, "height": self.windowHeight - self.levelZoneInfo["height"]}
+            self.levelZoneInfo = Engine.GUI.Widget(eventManager = None, rect = pygame.Rect(0, self.windowHeight - self.__infoZoneHeight, self.windowWidth, self.__infoZoneHeight)) #{"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
+            self.levelZoneGamePlay = {"x": 0, "y": 0, "width": self.windowWidth, "height": self.windowHeight - self.levelZoneInfo.rect.height}
             self.levelZonePaddleArea = {"x": 0, "y": self.levelZoneGamePlay["height"] - self.__paddleAreaHeight, "width": self.windowWidth, "height": self.__paddleAreaHeight}
 
             # difficulty
@@ -117,6 +126,7 @@ class Engine():
             self.brickWallMortarGap = 2
 
             # Base GUI widget properties
+            self.widgetFont = None
             self.widgetPadding = 40
             self.widgetFontSize = 56
             self.widgetCollisionZoneRatioCenter = 1 / 10
@@ -125,6 +135,11 @@ class Engine():
             # Label GUI Widget properties
             self.labelWidgetTextColor = Engine.Colors.BLACK
             self.labelWidgetBackgroundColor = Engine.Colors.WHITE
+
+            # StatTracker GUI Widget Properties
+            self.statTrackerTextFontSize = 24
+            self.statTrackerTextPadding = 8
+            self.statTrackerValueTextSpacing = 4
 
             # Slider GUI widget
             self.sliderFontSize = 24
@@ -146,7 +161,7 @@ class Engine():
             pass
 
         class Widget(pygame.sprite.Sprite):
-            def __init__(self, eventManager, container = None):
+            def __init__(self, eventManager, container = None, rect = None):
                 pygame.sprite.Sprite.__init__(self)
 
                 self.eventManager = eventManager
@@ -154,7 +169,8 @@ class Engine():
                 self.isCollidable = False
                 self.focused = False
                 self.dirty = True
-                self.options = self.eventManager.game.options #alias
+                self.options = self.eventManager.game.options if eventManager != None else None #alias
+                self.rect = rect
 
             def setPosition(self, x = None, y = None):
                 if x or y:
@@ -263,7 +279,7 @@ class Engine():
                 self.dirty = True
 
             def kill(self):
-                self.removeListeners()
+                self.eventManager.removeListeners()
                 self.container = None
                 del self.container
                 pygame.sprite.Sprite.kill(self)
@@ -271,12 +287,13 @@ class Engine():
             def addListeners(self):
                 pass
 
-            def removeListeners(self):
-                listeners = self.eventManager.getListeners()
-                if self in listeners.keys():
-                    for event in listeners[self]:
-                        e = Events.getEvent(event)
-                        self.eventManager.removeListener(e, self)
+##            def removeListeners(self, widget = None):
+##                obj = widget if widget != None else self
+##                listeners = self.eventManager.getListeners()
+##                if obj in listeners.keys():
+##                    for event in listeners[obj]:
+##                        e = Events.getEvent(event)
+##                        self.eventManager.removeListener(e, obj)
 
             def notify(self, event):
                 print("Abstract Class not implemented. Triggering event:", event.name)
@@ -287,7 +304,7 @@ class Engine():
             self.fillColor = fillColor if fillColor != None else Engine.Colors.WHITE
             self.widgets = pygame.sprite.Group()
             self.activate = self.addListeners
-            self.deactivate = self.removeListeners
+            #self.deactivate = self.removeListeners
             self.widgetValues = {}
 
         def addWidget(self, widget):
@@ -297,13 +314,9 @@ class Engine():
             for widget in self.widgets:
                 widget.addListeners()
 
-        def removeListeners(self):
-            for widget in self.widgets:
-                widget.removeListeners()
-
         def removeWidget(self, widget):
             if widget in self.widgets:
-                widget.removeListeners()
+                widget.eventManager.removeListeners(widget)
                 self.widgets.remove(widget)
 
         def getWidgets(self, ofType = None):
@@ -317,6 +330,29 @@ class Engine():
         def redrawWidgets(self, window):
             self.widgets.update()
             self.widgets.draw(window)
+
+    class Level(Layer):
+        def __init__(self, eventManager, fillColor = None, mouseVisible = True):
+            super().__init__(fillColor, mouseVisible)
+            self.eventManager = eventManager
+
+        def addListeners(self):
+            for widget in self.widgets:
+                widget.addListeners()
+
+            event = Events.StatUpdateEvent()
+            self.eventManager.addListener(event, self)
+
+        def removeListeners(self):
+            for widget in self.widgets:
+                widget.eventManager.removeListeners(widget)
+
+            self.eventManager.removeListeners(self)
+
+        def notify(self, event):
+            if isinstance(event, Events.StatUpdateEvent):
+                if event.stat == self.stat:
+                    self.value(event.value)
 
     class Ticker():
         def __init__(self, eventManager, engine):

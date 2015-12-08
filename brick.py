@@ -73,7 +73,6 @@ class Brick(Engine.GUI.Widget):
         event = Events.CollisionEvent()
         self.eventManager.addListener(event, self)
 
-
     def update(self):
         pass
 
@@ -85,6 +84,10 @@ class Brick(Engine.GUI.Widget):
 
     def removeFromPlay(self):
         self.isInPlay = False #set flag
+
+        event = Events.StatUpdateEvent(stat = Engine.Stats.SCORE, value = 1)
+        self.eventManager.post(event)
+
         self.kill()
 
     def redrawBrick(self):

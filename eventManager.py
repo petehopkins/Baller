@@ -36,6 +36,13 @@ class Events():
             self.pos = pos
             super().__init__()
 
+    class StatUpdateEvent(Event):
+        def __init__(self, stat = None, value = None):
+            self.name = "Stat Update Event"
+            self.stat = stat
+            self.value = value
+            super().__init__()
+
     class HoverWidgetEvent(Event):
         def __init__(self, pos = None):
             self.name = "Widget Mouse Hover Event"
@@ -113,12 +120,28 @@ class Events():
             self.name = "Pause Game Event"
             super().__init__()
 
+class Singleton():
+    __instances = {}
+    __sealed = False
+
+    def __new__(cls, *args, **kwargs):
+        if cls not in cls.__instances:
+            cls.__instances[cls] = object.__new__(cls, *args, **kwargs)
+        return cls.__instances[cls]
+
 class EventManager:
+    __instance = None
+
     #Used to decouple event handling from interface generation
-    def __init__(self, game):
-        self.events = {}
-        self.running = True
-        self.game = game
+    def __new__(self, game):
+        if self.__instance == None:
+            self.events = {}
+            self.game = game
+            self.running = True
+            self.__sealed = True
+            self.__instance = self
+
+        return self.__instance
 
     def getListeners(self):
         # Listeners are stored as the value part of a key/value dictionary where events are used as keys.
@@ -154,6 +177,13 @@ class EventManager:
         if eventName in self.events.keys():
             if listener in self.events[eventName]:
                 self.events[eventName].remove(listener)
+
+    def removeListeners(self, widget):
+        listeners = self.getListeners()
+        if widget in listeners.keys():
+            for event in listeners[widget]:
+                e = Events.getEvent(event)
+                self.removeListener(e, widget)
 
     def post(self, event):
         eventName = event.name

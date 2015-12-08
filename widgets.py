@@ -3,27 +3,29 @@ from engine import *
 from eventManager import *
 
 class Label(Engine.GUI.Widget):
-    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, container = None):
+    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None, container = None):
         super().__init__(eventManager, container)
 
         self.textColor = textColor if textColor != None else self.options.labelWidgetTextColor
         self.backgroundColor = backgroundColor if backgroundColor != None else self.options.labelWidgetBackgroundColor
 
-        self.font = pygame.font.Font(None, self.options.widgetFontSize)
+        self.fontSize = fontSize if fontSize != None else self.options.widgetFontSize
+        self.font = pygame.font.Font(self.options.widgetFont, self.fontSize)
         self.text = text
 
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor) #need this here to get initial size
         self.textRect = self.renderedText.get_rect()
         self.rect = self.textRect #self.rect is actually Rect for widget, used here to provide initial size values
 
+        self.padding = padding if padding != None else self.options.widgetPadding
         self.width = width
         if self.width == None:
-            self.width = self.rect.width + self.options.widgetPadding
+            self.width = self.rect.width + self.padding
             self.rect.width = self.width
 
         self.height = height
         if self.height == None:
-            self.height = self.rect.height + self.options.widgetPadding
+            self.height = self.rect.height + self.padding
             self.rect.height = self.height
 
     def redrawWidget(self):
@@ -44,9 +46,76 @@ class Label(Engine.GUI.Widget):
             self.redrawWidget()
             self.dirty = False
 
+class StatTracker(Label):
+    def __init__(self, eventManager, stat, value, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None, container = None):
+        super().__init__(eventManager, stat, textColor, backgroundColor, fontSize, padding, width, height, container)
+
+        self.stat = stat
+
+        self.statValue = value
+        self.text = stat
+
+        self.valueFontSize = fontSize if fontSize != None else self.options.widgetFontSize
+        self.valueFont = pygame.font.Font(self.options.widgetFont, self.valueFontSize)
+
+        self.textFontSize = self.options.statTrackerTextFontSize
+        self.textFont = pygame.font.Font(self.options.widgetFont, self.textFontSize)
+
+        # get initial sizes
+        self.renderedValue = self.valueFont.render(str(self.statValue), True, self.textColor, self.backgroundColor)
+        self.valueRect = self.renderedValue.get_rect()
+
+        self.renderedText = self.textFont.render(self.text, True, self.textColor, self.backgroundColor)
+        self.textRect = self.renderedText.get_rect()
+
+        self.padding = padding if padding != None else self.options.statTrackerTextPadding
+        self.width = width if width != None else max(self.valueRect.width, self.textRect.width) + self.padding
+        self.height = height if height != None else self.valueRect.height + self.textRect.height + self.padding + self.options.statTrackerValueTextSpacing
+
+        self.rect = self.textRect #self.rect is actually Rect for widget, used here to provide initial size values
+        self.rect.width = self.width
+        self.rect.height = self.height
+
+    def addListeners(self):
+        event = Events.StatUpdateEvent()
+        self.eventManager.addListener(event, self)
+
+    def notify(self, event):
+        if isinstance(event, Events.StatUpdateEvent):
+            if event.stat == self.stat:
+                self.value(event.value)
+
+    def value(self, value = None):
+        if value != None:
+            self.statValue += value
+            self.redrawWidget()
+
+        return self.value
+
+    def redrawWidget(self):
+        self.dirty = True
+        self.image = pygame.Surface((self.width, self.height))
+        self.image.fill(self.backgroundColor)
+
+        self.renderedValue = self.valueFont.render(str(self.statValue), True, self.textColor, self.backgroundColor)
+        self.valueRect = self.renderedValue.get_rect()
+        self.valueRect.x = (self.width / 2) - (self.valueRect.width / 2)
+        self.valueRect.y = (self.padding / 2) #self.topEdge() +
+
+        self.renderedText = self.textFont.render(self.text, True, self.textColor, self.backgroundColor)
+        self.textRect = self.renderedText.get_rect()
+        self.textRect.x = (self.width / 2) - (self.textRect.width / 2)
+        self.textRect.y = self.rect.height - (self.padding / 2) - self.textRect.height
+
+        self.width = max(self.valueRect.width, self.textRect.width) + self.padding
+        self.rect.width = self.width
+
+        self.image.blit(self.renderedValue, self.valueRect)
+        self.image.blit(self.renderedText, self.textRect)
+
 class HoverableWidget(Label):
-    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, width = None, height = None, onHoverAction = None, container = None):
-        super().__init__(eventManager, text, textColor, backgroundColor, width, height, container)
+    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, onHoverAction = None, width = None, height = None, container = None):
+        super().__init__(eventManager, text, textColor, backgroundColor, fontSize, padding, width, height, container)
 
         self.unfocusedBackgroundColor = self.backgroundColor
         self.focusedBackgroundColor = self.getFocusedColor(self.backgroundColor)
@@ -110,8 +179,8 @@ class HoverableWidget(Label):
             self.hover(focused)
 
 class Button(HoverableWidget):
-    def __init__(self, eventManager, text, textColor = None, buttonColor = None, onClickAction = None, onHoverAction = None, container = None):
-        super().__init__(eventManager, text, textColor, buttonColor, onHoverAction, container)
+    def __init__(self, eventManager, text, textColor = None, buttonColor = None, fontSize = None, padding = None, onClickAction = None, onHoverAction = None, width = None, height = None, container = None):
+        super().__init__(eventManager, text, textColor, buttonColor, fontSize, padding, onHoverAction, width, height, container)
 
         self.onClickAction = onClickAction
 
@@ -154,7 +223,7 @@ class SliderWidget(Engine.GUI.Widget):
         self.value = self.defaultValue
         self.stepValues = {}
 
-        self.font = pygame.font.Font(None, self.options.sliderFontSize)
+        self.font = pygame.font.Font(self.options.widgetFont, self.options.sliderFontSize)
 
         self.onDragAction = onDragAction if onDragAction != None else self.slideToValue
 

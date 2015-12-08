@@ -173,6 +173,9 @@ class Ball(Engine.GUI.Widget):
 ##            self.log = True
             self.bounce(1, 180, collidableObjects)
 
+            event = Events.StatUpdateEvent(stat = Engine.Stats.BALLS_REMAINING, value = -1)
+            self.eventManager.post(event)
+
         if self.leftEdge() <= self.options.levelZoneGamePlay["x"]:
 ##            self.log = True
             self.bounce(1, 360, collidableObjects)

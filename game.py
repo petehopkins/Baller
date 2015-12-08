@@ -76,6 +76,16 @@ class Game(Engine):
         paddle = Paddle(self.eventManager)
         screen.addWidget(paddle)
 
+        ballTracker = StatTracker(self.eventManager, self.Stats.BALLS_REMAINING, self.options.ballsRemaining)
+        ballTracker.leftEdge(self.options.levelZoneInfo.leftEdge())
+        ballTracker.bottomEdge(self.options.levelZoneInfo.bottomEdge())
+        screen.addWidget(ballTracker)
+
+        scoreTracker = StatTracker(self.eventManager, self.Stats.SCORE, self.options.score)
+        scoreTracker.rightEdge(self.options.levelZoneInfo.rightEdge() - 25)
+        scoreTracker.bottomEdge(self.options.levelZoneInfo.bottomEdge())
+        screen.addWidget(scoreTracker)
+
         return screen
 
     def makeOptions(self):
@@ -200,6 +210,11 @@ class Game(Engine):
     @staticmethod
     def launch():
         game = Game()
+
+        e1 = EventManager()
+        e2 = EventManager()
+
+        print(id(e1),id(e2))
 
         game.screens["start"] = game.makeStart()
         game.screens["options"] = game.makeOptions()

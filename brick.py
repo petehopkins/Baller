@@ -5,13 +5,13 @@
 # Requires pygame
 import pygame
 from engine import Engine
-from eventManager import Events
+from eventManager import *
 
 class Brick(Engine.GUI.Widget):
-    def __init__(self, eventManager, position, fill = None, border = None, container = None):
-        super().__init__(eventManager, container)
+    def __init__(self, position, fill = None, border = None):
+        super().__init__()
 
-        self.eventManager = eventManager
+        self.eventManager = EventManager()
 
         self.isCollidable = True
 
@@ -39,7 +39,7 @@ class Brick(Engine.GUI.Widget):
         self.redrawBrick()
 
     @staticmethod
-    def createWall(eventManager, options):
+    def createWall(options):
         pile = pygame.sprite.Group()
 
         ballparkWide = options.brickWallWidth // options.brickWidth
@@ -59,7 +59,7 @@ class Brick(Engine.GUI.Widget):
         for x in range(0, bricksWide):
             for y in range(0, bricksHigh):
                 position = [leftBorder + options.brickWallMortarGap + ((options.brickWidth + options.brickWallMortarGap) * x), topBorder + options.brickWallMortarGap + ((options.brickHeight + options.brickWallMortarGap) * y)]
-                brick = Brick(eventManager, position)
+                brick = Brick(position)
                 pile.add(brick)
 
         return pile.sprites()

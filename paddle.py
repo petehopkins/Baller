@@ -3,9 +3,9 @@ from engine import *
 from eventManager import Events
 
 class Paddle(Engine.GUI.Widget):
-    def __init__(self, eventManager):
+    def __init__(self):
 
-        super().__init__(eventManager)
+        super().__init__()
 
         self.width = self.options.paddleWidth
         self.height = self.options.paddleHeight

@@ -3,19 +3,18 @@ from eventManager import *
 
 class Engine():
     class Colors():
-        WHITE = (255, 255, 255, 255)
-        WHITE_TRANSLUCENT = (255, 255, 255, 64)
-        LIGHT_GREY = (192, 192, 192, 255)
-        DARK_BLUE = (0, 0, 96, 255)
-        BRIGHT_RED = (255, 0, 0, 255)
-        LAVENDER = (210, 166, 255, 255)
-        GREY = (128, 128, 128, 255)
-        BLACK = (0, 0, 0, 255)
+        WHITE = pygame.Color(255, 255, 255, 255)
+        WHITE_TRANSLUCENT = pygame.Color(255, 255, 255, 64)
+        LIGHT_GREY = pygame.Color(192, 192, 192, 255)
+        DARK_BLUE = pygame.Color(0, 0, 96, 255)
+        BRIGHT_RED = pygame.Color(255, 0, 0, 255)
+        LAVENDER = pygame.Color(210, 166, 255, 255)
+        GREY = pygame.Color(128, 128, 128, 255)
+        BLACK = pygame.Color(0, 0, 0, 255)
 
     class Stats():
         BALLS_REMAINING = "Balls Remaining"
         SCORE = "Score"
-
 
     class Options():
         def __init__(self):
@@ -44,9 +43,9 @@ class Engine():
             self.score = 0
 
             # level properties
-            self.__infoZoneHeight = 100
-            self.__paddleAreaHeight = 100
-            self.levelZoneInfo = Engine.GUI.Widget(eventManager = None, rect = pygame.Rect(0, self.windowHeight - self.__infoZoneHeight, self.windowWidth, self.__infoZoneHeight)) #{"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
+            self.__infoZoneHeight = 75
+            self.__paddleAreaHeight = 200
+            self.levelZoneInfo = Engine.GUI.RectWithEdges(pygame.Rect(0, self.windowHeight - self.__infoZoneHeight, self.windowWidth, self.__infoZoneHeight)) #{"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
             self.levelZoneGamePlay = {"x": 0, "y": 0, "width": self.windowWidth, "height": self.windowHeight - self.levelZoneInfo.rect.height}
             self.levelZonePaddleArea = {"x": 0, "y": self.levelZoneGamePlay["height"] - self.__paddleAreaHeight, "width": self.windowWidth, "height": self.__paddleAreaHeight}
 
@@ -160,38 +159,9 @@ class Engine():
         def __init__(self):
             pass
 
-        class Widget(pygame.sprite.Sprite):
-            def __init__(self, eventManager, container = None, rect = None):
-                pygame.sprite.Sprite.__init__(self)
-
-                self.eventManager = eventManager
-                self.container = container
-                self.isCollidable = False
-                self.focused = False
-                self.dirty = True
-                self.options = self.eventManager.game.options if eventManager != None else None #alias
+        class RectWithEdges():
+            def __init__(self, rect):
                 self.rect = rect
-
-            def setPosition(self, x = None, y = None):
-                if x or y:
-                    self.dirty = True
-
-                    if x:
-                        self.rect.x = x
-
-                    if y:
-                        self.rect.y = y
-
-                    self.update()
-
-            def centerOn(self, surf):
-                surfRect = surf.get_rect()
-                onX = surfRect.x + (surfRect.width / 2) - (self.rect.width / 2)
-                onY = surfRect.y + (surfRect.height / 2) - (self.rect.height / 2)
-                self.setPosition(onX, onY)
-
-            def get_rect(self):
-                return self.rect
 
             def leftEdge(self, x = None):
                 if x != None:
@@ -216,6 +186,37 @@ class Engine():
                     self.rect.y = (y - self.rect.height) # set y
 
                 return self.rect.y + self.rect.height
+
+        class Widget(pygame.sprite.Sprite, RectWithEdges):
+            def __init__(self):
+                pygame.sprite.Sprite.__init__(self)
+
+                self.eventManager = EventManager()
+                self.isCollidable = False
+                self.focused = False
+                self.dirty = True
+                self.options = self.eventManager.game.options #alias
+
+            def setPosition(self, x = None, y = None):
+                if x or y:
+                    self.dirty = True
+
+                    if x:
+                        self.rect.x = x
+
+                    if y:
+                        self.rect.y = y
+
+                    self.update()
+
+            def centerOn(self, surf):
+                surfRect = surf.get_rect()
+                onX = surfRect.x + (surfRect.width / 2) - (self.rect.width / 2)
+                onY = surfRect.y + (surfRect.height / 2) - (self.rect.height / 2)
+                self.setPosition(onX, onY)
+
+            def get_rect(self):
+                return self.rect
 
             def centerZone(self): # allow for a wider zone, if desired
                 rect = self.image.get_rect() # get a new rect based on the image
@@ -279,44 +280,50 @@ class Engine():
                 self.dirty = True
 
             def kill(self):
-                self.eventManager.removeListeners()
-                self.container = None
-                del self.container
+                self.eventManager.removeListeners(self)
                 pygame.sprite.Sprite.kill(self)
 
             def addListeners(self):
                 pass
-
-##            def removeListeners(self, widget = None):
-##                obj = widget if widget != None else self
-##                listeners = self.eventManager.getListeners()
-##                if obj in listeners.keys():
-##                    for event in listeners[obj]:
-##                        e = Events.getEvent(event)
-##                        self.eventManager.removeListener(e, obj)
 
             def notify(self, event):
                 print("Abstract Class not implemented. Triggering event:", event.name)
 
     class Layer():
         def __init__(self, fillColor = None, mouseVisible = True):
-            self.mouseVisible = mouseVisible
-            self.fillColor = fillColor if fillColor != None else Engine.Colors.WHITE
-            self.widgets = pygame.sprite.Group()
+            self.eventManager = EventManager()
+
             self.activate = self.addListeners
-            #self.deactivate = self.removeListeners
+            self.deactivate = self.removeListeners
+
+            self.widgets = pygame.sprite.Group()
             self.widgetValues = {}
 
+            self.mouseVisible = mouseVisible
+
+            self.background = pygame.Surface(self.eventManager.game.options.windowSize)
+            self.setFillColor(fillColor)
+
+        def setFillColor(self, fillColor):
+            self.fillColor = fillColor if fillColor != None else self.eventManager.game.Colors.WHITE
+
+            self.background.fill(self.fillColor)
+            self.background.set_alpha(self.fillColor.a)
+
         def addWidget(self, widget):
-            self.widgets.add(widget)#append
+            self.widgets.add(widget)
 
         def addListeners(self):
             for widget in self.widgets:
                 widget.addListeners()
 
+        def removeListeners(self):
+            for widget in self.widgets:
+                self.eventManager.removeListeners(widget)
+
         def removeWidget(self, widget):
             if widget in self.widgets:
-                widget.eventManager.removeListeners(widget)
+                self.eventManager.removeListeners(widget)
                 self.widgets.remove(widget)
 
         def getWidgets(self, ofType = None):
@@ -327,37 +334,41 @@ class Engine():
 
             return widgets
 
-        def redrawWidgets(self, window):
+        def redraw(self, window):
+            window.blit(self.background, self.background.get_rect())
             self.widgets.update()
             self.widgets.draw(window)
 
     class Level(Layer):
-        def __init__(self, eventManager, fillColor = None, mouseVisible = True):
+        def __init__(self, fillColor = None, mouseVisible = True):
             super().__init__(fillColor, mouseVisible)
-            self.eventManager = eventManager
+
+            self.ballsRemaining = self.eventManager.game.options.ballsRemaining
 
         def addListeners(self):
-            for widget in self.widgets:
-                widget.addListeners()
+            super().addListeners()
 
             event = Events.StatUpdateEvent()
             self.eventManager.addListener(event, self)
 
         def removeListeners(self):
-            for widget in self.widgets:
-                widget.eventManager.removeListeners(widget)
+            super().removeListeners()
 
             self.eventManager.removeListeners(self)
 
         def notify(self, event):
             if isinstance(event, Events.StatUpdateEvent):
-                if event.stat == self.stat:
-                    self.value(event.value)
+                if event.stat == Engine.Stats.BALLS_REMAINING:
+                    self.ballsRemaining += event.value
+
+                    if self.ballsRemaining < 0:
+                        event = Events.GameOverEvent()
+                        self.eventManager.post(event)
 
     class Ticker():
-        def __init__(self, eventManager, engine):
-            self.eventManager = eventManager
-            self.engine = engine
+        def __init__(self, engine):
+            self.eventManager = EventManager()
+            self.engine = self.eventManager.game
 
             event = Events.TickEvent()
             self.eventManager.addListener(event, self)
@@ -448,16 +459,20 @@ class Engine():
 
     def redrawWindow(self):
         screen = self.screens[self.activeScreen]
-        self.window.fill(self.options.windowFillColor)
-        screen.redrawWidgets(self.window)
+##        self.window.fill(self.options.windowFillColor)
+        screen.redraw(self.window)
 
     def end(self):
         self.eventManager.running = False
         pygame.display.quit()
         pygame.quit()
 
-    def __init__(self):
+    def __init__(self, game):
         #Initial module setup
+
+        #Instantiate the eventManager
+        self.eventManager = EventManager(game)
+
         #make an instance of GUI and Options classes so the interpreter won't kvetch
         self.GUI = Engine.GUI()
         self.defaults = Engine.Options() # first instance is read-only

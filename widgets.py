@@ -3,8 +3,8 @@ from engine import *
 from eventManager import *
 
 class Label(Engine.GUI.Widget):
-    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None, container = None):
-        super().__init__(eventManager, container)
+    def __init__(self, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None):
+        super().__init__()
 
         self.textColor = textColor if textColor != None else self.options.labelWidgetTextColor
         self.backgroundColor = backgroundColor if backgroundColor != None else self.options.labelWidgetBackgroundColor
@@ -47,8 +47,8 @@ class Label(Engine.GUI.Widget):
             self.dirty = False
 
 class StatTracker(Label):
-    def __init__(self, eventManager, stat, value, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None, container = None):
-        super().__init__(eventManager, stat, textColor, backgroundColor, fontSize, padding, width, height, container)
+    def __init__(self, stat, value, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None):
+        super().__init__(stat, textColor, backgroundColor, fontSize, padding, width, height)
 
         self.stat = stat
 
@@ -114,8 +114,8 @@ class StatTracker(Label):
         self.image.blit(self.renderedText, self.textRect)
 
 class HoverableWidget(Label):
-    def __init__(self, eventManager, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, onHoverAction = None, width = None, height = None, container = None):
-        super().__init__(eventManager, text, textColor, backgroundColor, fontSize, padding, width, height, container)
+    def __init__(self, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, onHoverAction = None, width = None, height = None):
+        super().__init__(text, textColor, backgroundColor, fontSize, padding, width, height)
 
         self.unfocusedBackgroundColor = self.backgroundColor
         self.focusedBackgroundColor = self.getFocusedColor(self.backgroundColor)
@@ -179,8 +179,8 @@ class HoverableWidget(Label):
             self.hover(focused)
 
 class Button(HoverableWidget):
-    def __init__(self, eventManager, text, textColor = None, buttonColor = None, fontSize = None, padding = None, onClickAction = None, onHoverAction = None, width = None, height = None, container = None):
-        super().__init__(eventManager, text, textColor, buttonColor, fontSize, padding, onHoverAction, width, height, container)
+    def __init__(self, text, textColor = None, buttonColor = None, fontSize = None, padding = None, onClickAction = None, onHoverAction = None, width = None, height = None):
+        super().__init__(text, textColor, buttonColor, fontSize, padding, onHoverAction, width, height)
 
         self.onClickAction = onClickAction
 
@@ -205,10 +205,10 @@ class Button(HoverableWidget):
             self.click()
 
 class SliderWidget(Engine.GUI.Widget):
-    def __init__(self, eventManager, valueKey, values, defaultValue, textColor = None, fillColor = None, backgroundColor = None, onDragAction = None, container = None):
-        super().__init__(eventManager, container)
+    def __init__(self, valueKey, values, defaultValue, textColor = None, fillColor = None, backgroundColor = None, onDragAction = None):
+        super().__init__()
 
-        self.eventManager = eventManager
+        self.eventManager = EventManager()
 
         self.textColor = textColor if textColor != None else self.options.sliderWidgetTextColor
         self.fillColor = fillColor if fillColor != None else self.options.sliderWidgetFillColor

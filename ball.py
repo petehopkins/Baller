@@ -5,11 +5,11 @@ from brick import *
 from paddle import *
 
 class Ball(Engine.GUI.Widget):
-    def __init__(self, eventManager, level):
-        super().__init__(eventManager, None)
+    def __init__(self, level):
+        super().__init__()
 
         self.level = level
-        self.eventManager = eventManager
+        self.eventManager = EventManager()
 
         self.radius = self.options.ballRadius
         self.vector = self.options.ballVectorInitial

@@ -15,9 +15,13 @@ from paddle import *
 
 class Game(Engine):
     def __init__(self):
-        super().__init__()
-        self.eventManager = EventManager(self)
-        self.ticker = Engine.Ticker(self.eventManager, self)
+        # pass a reference to the game to the Engine
+        # this will allow easy access to other things in the Engine
+        # that some widgets need (e.g., the Options class)
+
+        super().__init__(self)
+
+        self.ticker = Engine.Ticker(self)
 
         event = Events.ActivateScreenEvent()
         self.eventManager.addListener(event, self)
@@ -38,6 +42,9 @@ class Game(Engine):
         self.eventManager.addListener(event, self)
 
         event = Events.PauseGameEvent()
+        self.eventManager.addListener(event, self)
+
+        event = Events.GameOverEvent()
         self.eventManager.addListener(event, self)
 
     def postNewGameEvent(self):
@@ -65,23 +72,23 @@ class Game(Engine):
         self.eventManager.post(event)
 
     def makeLevel(self):
-        screen = Engine.Layer(mouseVisible = False)
+        screen = Engine.Level(mouseVisible = False)
 
-        wall = Brick.createWall(self.eventManager, self.options)
+        wall = Brick.createWall(self.options)
         screen.addWidget(wall)
 
-        ball = Ball(self.eventManager, screen)
+        ball = Ball(screen)
         screen.addWidget(ball)
 
-        paddle = Paddle(self.eventManager)
+        paddle = Paddle()
         screen.addWidget(paddle)
 
-        ballTracker = StatTracker(self.eventManager, self.Stats.BALLS_REMAINING, self.options.ballsRemaining)
+        ballTracker = StatTracker(self.Stats.BALLS_REMAINING, self.options.ballsRemaining)
         ballTracker.leftEdge(self.options.levelZoneInfo.leftEdge())
         ballTracker.bottomEdge(self.options.levelZoneInfo.bottomEdge())
         screen.addWidget(ballTracker)
 
-        scoreTracker = StatTracker(self.eventManager, self.Stats.SCORE, self.options.score)
+        scoreTracker = StatTracker(self.Stats.SCORE, self.options.score)
         scoreTracker.rightEdge(self.options.levelZoneInfo.rightEdge() - 25)
         scoreTracker.bottomEdge(self.options.levelZoneInfo.bottomEdge())
         screen.addWidget(scoreTracker)
@@ -91,37 +98,37 @@ class Game(Engine):
     def makeOptions(self):
         screen = Engine.Layer()
 
-        title = Label(self.eventManager, "Options", self.Colors.BLACK)
+        title = Label("Options", self.Colors.BLACK)
         title.centerOn(self.window)
         title.setPosition(y = 100)
         screen.addWidget(title)
 
-        sensitivityLabel = Label(self.eventManager, "Sensitivity", self.Colors.BLACK)
+        sensitivityLabel = Label("Sensitivity", self.Colors.BLACK)
         sensitivityLabel.setPosition(50, 200)
         screen.addWidget(sensitivityLabel)
 
-        sensitivity = SliderWidget(self.eventManager, "sensitivity", self.options.availableSensitivities, self.options.sensitivityValue)
+        sensitivity = SliderWidget("sensitivity", self.options.availableSensitivities, self.options.sensitivityValue)
         sensitivity.setPosition(530, sensitivityLabel.rect.y + 20)
         screen.addWidget(sensitivity)
 
-        difficultyLabel = Label(self.eventManager, "Difficulty", self.Colors.BLACK)
+        difficultyLabel = Label("Difficulty", self.Colors.BLACK)
         difficultyLabel.setPosition(50, 300)
         screen.addWidget(difficultyLabel)
 
-        difficulty = SliderWidget(self.eventManager, "difficulty", self.options.availableDifficulties, self.options.difficultyValue)
+        difficulty = SliderWidget("difficulty", self.options.availableDifficulties, self.options.difficultyValue)
         difficulty.setPosition(530, difficultyLabel.rect.y + 20)
         screen.addWidget(difficulty)
 
-        saveButton = Button(self.eventManager, "Apply", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postApplyOptionsEvent)
+        saveButton = Button("Apply", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postApplyOptionsEvent)
         saveButton.setPosition(50, 500)
         screen.addWidget(saveButton)
 
-        defaultsButton = Button(self.eventManager, "Defaults", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postResetValuesToDefaultsEvent)
+        defaultsButton = Button("Defaults", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postResetValuesToDefaultsEvent)
         defaultsButton.centerOn(self.window)
         defaultsButton.setPosition(y = 500)
         screen.addWidget(defaultsButton)
 
-        cancelButton = Button(self.eventManager, "Cancel", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postCancelOptionsEvent)
+        cancelButton = Button("Cancel", buttonColor = self.Colors.LIGHT_GREY, onClickAction = self.postCancelOptionsEvent)
         cancelButton.setPosition(575, 500)
         screen.addWidget(cancelButton)
 
@@ -129,27 +136,45 @@ class Game(Engine):
 
     def makePause(self):
         screen = self.makeOptions()
-        screen.fillColor = self.Colors.WHITE_TRANSLUCENT
+        screen.setFillColor(self.Colors.WHITE_TRANSLUCENT)
         return screen
 
     def makeStart(self):
         screen = Engine.Layer()
 
-        title = Label(self.eventManager, self.options.name, self.Colors.LAVENDER)
+        title = Label(self.options.name, self.Colors.LAVENDER)
         title.centerOn(self.window)
         title.setPosition(y = 200)
         screen.addWidget(title)
 
-        startButton = Button(self.eventManager, "Start", buttonColor = Engine.Colors.GREY, onClickAction = self.postNewGameEvent)
+        startButton = Button("Start", buttonColor = Engine.Colors.GREY, onClickAction = self.postNewGameEvent)
         startButton.setPosition(50, 500)
         screen.addWidget(startButton)
 
-        optionsButton = Button(self.eventManager, "Options", onClickAction = self.postShowOptionsEvent)
+        optionsButton = Button("Options", onClickAction = self.postShowOptionsEvent)
         optionsButton.centerOn(self.window)
         optionsButton.setPosition(y = 500)
         screen.addWidget(optionsButton)
 
-        quitButton = Button(self.eventManager, "Quit", onClickAction = self.postQuitEvent)
+        quitButton = Button("Quit", onClickAction = self.postQuitEvent)
+        quitButton.setPosition(625, 500)
+        screen.addWidget(quitButton)
+
+        return screen
+
+    def makeGameOver(self):
+        screen = Engine.Layer()
+        screen.setFillColor(self.Colors.WHITE_TRANSLUCENT)
+
+        gameOver = Label("Game Over")
+        gameOver.centerOn(self.window)
+        screen.addWidget(gameOver)
+
+        mainButton = Button("Main Menu", buttonColor = Engine.Colors.GREY, onClickAction = self.postNewGameEvent)
+        mainButton.setPosition(50, 500)
+        screen.addWidget(mainButton)
+
+        quitButton = Button("Quit", onClickAction = self.postQuitEvent)
         quitButton.setPosition(625, 500)
         screen.addWidget(quitButton)
 
@@ -162,15 +187,14 @@ class Game(Engine):
 
         self.activeScreen = screenName
         screen = self.screens[self.activeScreen]
-        pygame.mouse.set_visible(screen.mouseVisible)
 
-        self.window.fill(screen.fillColor)
-        screen.redrawWidgets(self.window)
+        pygame.mouse.set_visible(screen.mouseVisible)
 
         self.screens[self.activeScreen].activate()
 
     def notify(self, event):
         if isinstance(event, Events.NewGameEvent):
+            self.screens["level"] = self.makeLevel()
             self.showScreen("level")
 
         if isinstance(event, Events.ShowOptionsEvent):
@@ -207,19 +231,17 @@ class Game(Engine):
             if self.activeScreen == "level":
                 self.showScreen("pause")
 
+        if isinstance(event, Events.GameOverEvent):
+            self.showScreen("game_over")
+
     @staticmethod
     def launch():
         game = Game()
 
-        e1 = EventManager()
-        e2 = EventManager()
-
-        print(id(e1),id(e2))
-
         game.screens["start"] = game.makeStart()
         game.screens["options"] = game.makeOptions()
         game.screens["pause"] = game.makePause()
-        game.screens["level"] = game.makeLevel()
+        game.screens["game_over"] = game.makeGameOver()
 
         game.activeScreen = "start"
 

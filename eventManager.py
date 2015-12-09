@@ -120,28 +120,35 @@ class Events():
             self.name = "Pause Game Event"
             super().__init__()
 
-class Singleton():
-    __instances = {}
+    class GameOverEvent(Event):
+        def __init__(self):
+            self.name = "Game Over Event"
+            super().__init__()
+
+# The definition of the Singleton metaclass below was taken from:
+#    http://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+#
+# The method used is listed as (at the time of this writing): Method 3
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+
+        return cls._instances[cls]
+
+class EventManager(metaclass = Singleton):
     __sealed = False
-
-    def __new__(cls, *args, **kwargs):
-        if cls not in cls.__instances:
-            cls.__instances[cls] = object.__new__(cls, *args, **kwargs)
-        return cls.__instances[cls]
-
-class EventManager:
-    __instance = None
+    game = None
 
     #Used to decouple event handling from interface generation
-    def __new__(self, game):
-        if self.__instance == None:
+    def __init__(self, game = None):
+        if not self.__sealed:
             self.events = {}
-            self.game = game
             self.running = True
+            self.game = game
             self.__sealed = True
-            self.__instance = self
-
-        return self.__instance
 
     def getListeners(self):
         # Listeners are stored as the value part of a key/value dictionary where events are used as keys.

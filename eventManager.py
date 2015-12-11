@@ -17,12 +17,12 @@ class Events():
             if not self.name:
                 self.name = "Generic Event"
 
-            Events.lookUp[self.name] = self
+            Events.lookUp[self.name] = self # register name in the lookup table
 
     class TickEvent(Event):
         def __init__(self):
             self.name = "Game Tick Event"
-            super().__init__()
+            super().__init__() # ensure name is registered in the lookup table
 
     class CollisionEvent(Event):
         def __init__(self, obj = None):

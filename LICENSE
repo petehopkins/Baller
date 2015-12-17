@@ -1,5 +1,25 @@
-The MIT License (MIT)
+---------------
+Music Licensing
+---------------
+Ambient Music by http://fantomenk.newgrounds.com/audio/
+Tracks used:
+	Cold War Game Theme Song
+	A Tiny Spaceship's Final Mission
 
+	Licensing for both tracks is a version of the Creative Commons which adds:
+		"You may not use this work for commercial purposes without making specific arrangements with the artist UNLESS your work is a web-based game or animation, in which case you may use this freely."
+
+Sound Effects from http://soundbible.com/
+Tracks used:
+	Neck Snap Sound | License: Public Domain | Recorded by Vladimir | http://soundbible.com/1953-Neck-Snap.html
+	Blop Sound | License: Creative Commons Attribution 3.0 | Recorded by Mark DiAngelo | http://soundbible.com/2067-Blop.html
+	Crumbling Sound | License: Creative Commons Attribution 3.0 | Recorded by Mike Koenig | http://soundbible.com/1886-Crumbling.html
+	10 Second Applause Sound | License: Creative Commons Attribution 3.0 | Recorded by Mike Koenig | http://soundbible.com/989-10-Second-Applause.html
+
+---------------------
+Source Code Licensing
+---------------------
+The MIT License (MIT)
 Copyright (c) 2015 petehopkins
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -8,7 +28,6 @@ in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
@@ -19,4 +38,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-

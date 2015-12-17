@@ -17,6 +17,9 @@ class Ball(Engine.GUI.Widget):
         self.speed = self.options.ballSpeed
         self.color = self.options.ballColor
 
+        self.pauseForTicks = 0
+        self.repositionWhilePausedAfterTicks = 0
+
         # puting these here as these may be needed
         self.width = self.options.ballRadius * 2
         self.height = self.width
@@ -24,7 +27,7 @@ class Ball(Engine.GUI.Widget):
         self.x = self.options.ballInitialPosition[0]
         self.y = self.options.ballInitialPosition[1]
 
-        #making a square ball for now
+        # making a square ball for now
         self.image = pygame.Surface((self.options.ballRadius * 2, self.options.ballRadius * 2))
         self.image.fill(self.color)
 
@@ -35,7 +38,8 @@ class Ball(Engine.GUI.Widget):
         self.group = pygame.sprite.GroupSingle()
         self.group.add(self)
 
-        self.log = False
+        self.soundBallBounce = pygame.mixer.Sound(self.options.soundBallBounce)
+        self.soundVolumeBallBounce = self.options.soundVolumeBallBounce
 
     def update(self):
         x = self.rect.x
@@ -57,12 +61,17 @@ class Ball(Engine.GUI.Widget):
 
     def notify(self, event):
         if isinstance(event, Events.TickEvent):
-            # reposition ball and check for collisions
-            self.move(self.speed)
-            self.checkForCollisions()
+            if self.pauseForTicks > 0:
+                self.pauseForTicks -= 1
+                if self.pauseForTicks == self.repositionWhilePausedAfterTicks:
+                    self.move(0)
+            else:
+                # reposition ball and check for collisions
+                self.move(self.speed)
+                self.checkForCollisions()
 
     def handleOverlap(self, xOverlap, yOverlap, isPaddle):
-        #figure out which overlap is further into the brick with an edge case of equally
+        # figure out which overlap is further into the brick with an edge case of equally
         overlap = 0
         normalAxis = 180 # default to top/bottom collisions
 
@@ -97,6 +106,9 @@ class Ball(Engine.GUI.Widget):
         # while exiting the collision zone
 
         normals = []
+
+        # play sound
+        self.soundBallBounce.play()
 
         if self.leftEdge() < self.options.levelZoneGamePlay["x"]:
             self.x = self.options.levelZoneGamePlay["x"] # left edge is past window, clamp to left edge of window
@@ -137,47 +149,46 @@ class Ball(Engine.GUI.Widget):
                 normals.append(self.handleOverlap(xOverlap, yOverlap, isPaddle))
 
             co.collide() # may as well notify the object of a collision here so we don't have to loop through twice
-##            self.log = co.bottomEdge() < 30 # DEBUG POINT: Remove later
 
-        #finally, change vector, angle of incidence = angle of reflection, may need to change rotation (counter/clockwise) on paddle hit or ball spin
+        # finally, change vector, angle of incidence = angle of reflection, may need to change rotation (counter/clockwise) on paddle hit or ball spin
         if len(normals) > 0: # multiple bounces passed in, bounce once prioritizing vertical travel
             normalAxis = max(normals)
 
-        #angle of incidence... yadda yadda...
+        # angle of incidence... yadda yadda...
         reflectionVector = (normalAxis - self.vector)
 
-        #change gyre direction if needed
+        # change gyre direction if needed
         reflectionVector -= self.gyreDirection #(0 or 180)
 
-        #keep the angles sane (i.e., between 0 and 359)
+        # keep the angles sane (i.e., between 0 and 359)
         reflectionVector %= 360
 
-        #update to new vector
+        # update to new vector
         self.vector = reflectionVector
 
     def checkForCollisions(self):
-        #start counting bounces
+        # intialize variables here to count brick/paddle bounces as python does not support variable hoisting
         bounces = 0
         collidableObjects = pygame.sprite.Group()
 
-        #check for boundary collisions
+        # check for boundary collisions
         if self.topEdge() <= self.options.levelZoneGamePlay["y"]:
-##            self.log = True
             self.bounce(1, 180, collidableObjects)
 
         if self.rightEdge() >= self.options.levelZoneGamePlay["x"] + self.options.levelZoneGamePlay["width"]:
-##            self.log = True
             self.bounce(1, 360, collidableObjects)
 
-        if self.bottomEdge() >= self.options.levelZoneGamePlay["y"] + self.options.levelZoneGamePlay["height"]: #once algorithm is abstracted / finalized, lose a ball instead
-##            self.log = True
-            self.bounce(1, 180, collidableObjects)
+        if self.bottomEdge() >= self.options.levelZoneGamePlay["y"] + self.options.levelZoneGamePlay["height"]: # bottom was hit, lose a ball
+            # reset to intial position and vector
+            self.x = self.options.ballInitialPosition[0]
+            self.y = self.options.ballInitialPosition[1]
+            self.vector = self.options.ballVectorInitial
+            self.pauseForTicks = 60
 
             event = Events.StatUpdateEvent(stat = Engine.Stats.BALLS_REMAINING, value = -1)
             self.eventManager.post(event)
 
         if self.leftEdge() <= self.options.levelZoneGamePlay["x"]:
-##            self.log = True
             self.bounce(1, 360, collidableObjects)
 
         #check for bricks
@@ -200,8 +211,6 @@ class Ball(Engine.GUI.Widget):
         bounces += len(collidableObjects)
 
         if bounces > 0:
-            self.log = True
-            #self.bounce(bounces, 180, collidableObjects, isPaddle = True) # pass in paddle to handle basic collision and overlaps
             for paddle in collidableObjects: # should only be one, but this allows for multiple paddles later if we want to do that sort of thing
                 self.bottomEdge(paddle.topEdge()) # always set the bottom edge of the ball to the top edge of the paddle
                 paddle.redirect(self) # set the new vector
@@ -231,8 +240,3 @@ class Ball(Engine.GUI.Widget):
         # assigning a fractional value to a pygame.Rect will apparently truncate the fraction, hence the need for separate storage above
         self.rect.x = self.x
         self.rect.y = self.y
-
-##        if self.log:
-##            print("vector: {0}".format(self.vector))
-##            print("x:      rendered: {0}, delta: {1: 3f}, tracked: {2: 3f}".format(self.rect.x, dx, self.x))
-##            print("y:      rendered: {0}, delta: {1: 3f}, tracked: {2: 3f}".format(self.rect.y, dy, self.y))

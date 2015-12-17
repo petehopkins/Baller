@@ -3,11 +3,12 @@ from engine import *
 from eventManager import *
 
 class Label(Engine.GUI.Widget):
-    def __init__(self, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None):
+    def __init__(self, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None, transparentBackground = True):
         super().__init__()
 
         self.textColor = textColor if textColor != None else self.options.labelWidgetTextColor
         self.backgroundColor = backgroundColor if backgroundColor != None else self.options.labelWidgetBackgroundColor
+        self.hasTransparentBackground = transparentBackground
 
         self.fontSize = fontSize if fontSize != None else self.options.widgetFontSize
         self.font = pygame.font.Font(self.options.widgetFont, self.fontSize)
@@ -33,6 +34,9 @@ class Label(Engine.GUI.Widget):
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(self.backgroundColor)
 
+        if self.hasTransparentBackground:
+            self.image.set_colorkey(self.backgroundColor)
+
         self.renderedText = self.font.render(self.text, True, self.textColor, self.backgroundColor)
         self.textRect = self.renderedText.get_rect()
 
@@ -47,8 +51,8 @@ class Label(Engine.GUI.Widget):
             self.dirty = False
 
 class StatTracker(Label):
-    def __init__(self, stat, value, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None):
-        super().__init__(stat, textColor, backgroundColor, fontSize, padding, width, height)
+    def __init__(self, stat, value, textColor = None, backgroundColor = None, fontSize = None, padding = None, width = None, height = None, transparentBackground = True):
+        super().__init__(stat, textColor, backgroundColor, fontSize, padding, width, height, transparentBackground)
 
         self.stat = stat
 
@@ -90,12 +94,15 @@ class StatTracker(Label):
             self.statValue += value
             self.redrawWidget()
 
-        return self.value
+        return self.statValue
 
     def redrawWidget(self):
         self.dirty = True
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(self.backgroundColor)
+
+        if self.hasTransparentBackground:
+            self.image.set_colorkey(self.backgroundColor)
 
         self.renderedValue = self.valueFont.render(str(self.statValue), True, self.textColor, self.backgroundColor)
         self.valueRect = self.renderedValue.get_rect()
@@ -114,8 +121,8 @@ class StatTracker(Label):
         self.image.blit(self.renderedText, self.textRect)
 
 class HoverableWidget(Label):
-    def __init__(self, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, onHoverAction = None, width = None, height = None):
-        super().__init__(text, textColor, backgroundColor, fontSize, padding, width, height)
+    def __init__(self, text, textColor = None, backgroundColor = None, fontSize = None, padding = None, onHoverAction = None, width = None, height = None, transparentBackground = False):
+        super().__init__(text, textColor, backgroundColor, fontSize, padding, width, height, transparentBackground)
 
         self.unfocusedBackgroundColor = self.backgroundColor
         self.focusedBackgroundColor = self.getFocusedColor(self.backgroundColor)
@@ -180,7 +187,7 @@ class HoverableWidget(Label):
 
 class Button(HoverableWidget):
     def __init__(self, text, textColor = None, buttonColor = None, fontSize = None, padding = None, onClickAction = None, onHoverAction = None, width = None, height = None):
-        super().__init__(text, textColor, buttonColor, fontSize, padding, onHoverAction, width, height)
+        super().__init__(text, textColor, buttonColor, fontSize, padding, onHoverAction, width, height, transparentBackground = False)
 
         self.onClickAction = onClickAction
 
@@ -189,6 +196,7 @@ class Button(HoverableWidget):
 
         event = Events.LeftClickWidgetEvent()
         self.eventManager.addListener(event, self)
+        #print("Adding listeners for", self.text)
 
     def click(self):
         if self.onClickAction:
@@ -199,13 +207,14 @@ class Button(HoverableWidget):
         super().notify(event)
 
         if isinstance(event, Events.LeftClickWidgetEvent) and self.rect.collidepoint(event.pos):
+            #print("Firing", event.name, "for Listener", self.text)
             self.click()
 
         elif isinstance(event, Events.KeyboardActivateWidgetEvent) and self.focused:
             self.click()
 
 class SliderWidget(Engine.GUI.Widget):
-    def __init__(self, valueKey, values, defaultValue, textColor = None, fillColor = None, backgroundColor = None, onDragAction = None):
+    def __init__(self, valueKey, values, defaultValue, textColor = None, fillColor = None, backgroundColor = None, onDragAction = None, transparentBackground = True):
         super().__init__()
 
         self.eventManager = EventManager()
@@ -213,6 +222,7 @@ class SliderWidget(Engine.GUI.Widget):
         self.textColor = textColor if textColor != None else self.options.sliderWidgetTextColor
         self.fillColor = fillColor if fillColor != None else self.options.sliderWidgetFillColor
         self.backgroundColor = backgroundColor if backgroundColor != None else self.options.sliderWidgetBackgroundColor
+        self.hasTransparentBackground = transparentBackground
 
         self.width = self.options.sliderWidth
         self.height = self.options.sliderHeight
@@ -275,6 +285,9 @@ class SliderWidget(Engine.GUI.Widget):
 
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(self.backgroundColor)
+
+        if self.hasTransparentBackground:
+            self.image.set_colorkey(self.backgroundColor)
 
         self.bar = pygame.Surface((self.options.sliderWidth, self.options.sliderBarHeight))
         self.bar.fill(self.fillColor)

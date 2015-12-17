@@ -80,14 +80,19 @@ class Events():
             self.pos = pos
             super().__init__()
 
-    class ActivateScreenEvent(Event):
+    class ShowStartEvent(Event):
         def __init__(self):
-            self.name = "Activate Screen Event"
+            self.name = "Show Start Event"
             super().__init__()
 
     class NewGameEvent(Event):
         def __init__(self):
             self.name = "New Game Event"
+            super().__init__()
+
+    class LowerVolumeEvent(Event):
+        def __init__(self):
+            self.name = "Lower Volume Event"
             super().__init__()
 
     class ShowOptionsEvent(Event):
@@ -120,9 +125,19 @@ class Events():
             self.name = "Pause Game Event"
             super().__init__()
 
+    class UnpauseGameEvent(Event):
+        def __init__(self):
+            self.name = "Unpause Game Event"
+            super().__init__()
+
     class GameOverEvent(Event):
         def __init__(self):
             self.name = "Game Over Event"
+            super().__init__()
+
+    class LevelCompleteEvent(Event):
+        def __init__(self):
+            self.name = "Level Complete Event"
             super().__init__()
 
 # The definition of the Singleton metaclass below was taken from:
@@ -185,12 +200,19 @@ class EventManager(metaclass = Singleton):
             if listener in self.events[eventName]:
                 self.events[eventName].remove(listener)
 
+    def __printListeners(self, event): # used for debugging
+        if event in self.events.keys():
+            for listener in self.events[event]:
+                print(listener.text, "is registered for", event)
+
     def removeListeners(self, widget):
         listeners = self.getListeners()
         if widget in listeners.keys():
             for event in listeners[widget]:
                 e = Events.getEvent(event)
                 self.removeListener(e, widget)
+
+        #self.game.sleep(2) # IMPORTANT! Leave this line here, otherwise pygame acts like it's multi-threaded which is an undesired behavior.
 
     def post(self, event):
         eventName = event.name
@@ -204,7 +226,7 @@ class EventManager(metaclass = Singleton):
             event = Events.TickEvent()
             self.post(event)
 
-            pygame.event.pump()
+            pygame.event.pump() # per documentation: "you should call pygame.event.pump() to allow pygame to handle internal actions."
             for e in pygame.event.get():
 
                 if e.type ==  pygame.MOUSEMOTION:
@@ -225,7 +247,11 @@ class EventManager(metaclass = Singleton):
                 if e.type ==  pygame.KEYUP:
                     #e.key, e.mod
                     if e.key == pygame.K_ESCAPE or e.key == pygame.K_p:
-                        event = Events.PauseGameEvent()
+                        if self.game.activeScreen == "pause":
+                            event = Events.CancelOptionsEvent()
+                        else:
+                            event = Events.PauseGameEvent()
+
                         self.post(event)
 
                 if e.type == pygame.MOUSEBUTTONUP:

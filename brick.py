@@ -35,6 +35,12 @@ class Brick(Engine.GUI.Widget):
         self.innerRect.x = (self.rect.width / 2) - (self.innerRect.width / 2)
         self.innerRect.y = (self.rect.height / 2) - (self.innerRect.height / 2)
 
+        self.soundBrickHit = pygame.mixer.Sound(self.options.soundBrickHit)
+        self.soundVolumeBrickHit = self.options.soundVolumeBrickHit
+
+        self.soundBrickDestroyed = pygame.mixer.Sound(self.options.soundBrickDestroyed)
+        self.soundVolumeBrickDestroyed = self.options.soundVolumeBrickDestroyed
+
         self.animate()
         self.redrawBrick()
 
@@ -85,10 +91,12 @@ class Brick(Engine.GUI.Widget):
     def removeFromPlay(self):
         self.isInPlay = False #set flag
 
+        # eliminate this brick
+        self.kill()
+
+        # send the update event
         event = Events.StatUpdateEvent(stat = Engine.Stats.SCORE, value = 1)
         self.eventManager.post(event)
-
-        self.kill()
 
     def redrawBrick(self):
         self.image.fill(self.border)
@@ -96,6 +104,11 @@ class Brick(Engine.GUI.Widget):
         self.image.blit(self.inner, self.innerRect)
 
     def animate(self):
+        if 0 <= self.hitsRemaining < self.options.brickHitsRemaining:
+            # play sound effect for a brick hit
+            self.soundBrickHit.play()
+
+        # determine brick color
         if self.hitsRemaining == 3:
             self.fill = Engine.Colors.DARK_BLUE
 
@@ -109,7 +122,8 @@ class Brick(Engine.GUI.Widget):
             self.fill = Engine.Colors.GREY
         else:
             self.fill = Engine.Colors.BLACK
-            self.removeFromPlay() #no hits remaining, get rid of this one
+            self.removeFromPlay() # no hits remaining, get rid of this one
+            self.soundBrickDestroyed.play() # and play this effect instead
 
         self.redrawBrick()
 

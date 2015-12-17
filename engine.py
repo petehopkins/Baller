@@ -32,6 +32,18 @@ class Engine():
             # clock
             self.tickSpeed = 60
 
+            # sound properties
+            self.soundNumberOfChannels = 8
+            self.soundAmbientChannelNumber = 0
+            self.soundPlayAmbient = True
+            self.soundPlayBrickHit = True
+            self.soundPlayBrickDestroyed = True
+            self.soundPlayBallBounce = True
+            self.soundVolumeAmbient = 1
+            self.soundVolumeBrickHit = 1
+            self.soundVolumeBrickDestroyed = 1
+            self.soundVolumeBallBounce = 1
+
             # window properties
             self.windowWidth = 800
             self.windowHeight = 600
@@ -42,13 +54,6 @@ class Engine():
             self.ballsRemaining = 3
             self.score = 0
 
-            # level properties
-            self.__infoZoneHeight = 75
-            self.__paddleAreaHeight = 200
-            self.levelZoneInfo = Engine.GUI.RectWithEdges(pygame.Rect(0, self.windowHeight - self.__infoZoneHeight, self.windowWidth, self.__infoZoneHeight)) #{"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
-            self.levelZoneGamePlay = {"x": 0, "y": 0, "width": self.windowWidth, "height": self.windowHeight - self.levelZoneInfo.rect.height}
-            self.levelZonePaddleArea = {"x": 0, "y": self.levelZoneGamePlay["height"] - self.__paddleAreaHeight, "width": self.windowWidth, "height": self.__paddleAreaHeight}
-
             # difficulty
             self.availableDifficulties = [("Easy", 0), ("Normal", 1), ("Hard", 2), ("Brutal", 3)]
             self.defaultDifficultyValue = 1
@@ -58,26 +63,44 @@ class Engine():
                     "paddleWidth": 150,
                     "brickHitsRemaining": 0,
                     "ballRadius": 25,
-                    "ballSpeed": 2
+                    "ballSpeed": 2,
+                    "backgroundImage": "resources/images/easy.png"
                     },
                 1: {
                     "paddleWidth": 100,
                     "brickHitsRemaining": 1,
                     "ballRadius": 12.5,
-                    "ballSpeed": 4
+                    "ballSpeed": 4,
+                    "backgroundImage": "resources/images/normal.png"
                 },
                 2: {
                     "paddleWidth": 50,
                     "brickHitsRemaining": 2,
                     "ballRadius": 6.75,
-                    "ballSpeed": 8
+                    "ballSpeed": 8,
+                    "backgroundImage": "resources/images/hard.png"
                 },
                 3: {
                     "paddleWidth": 10,
                     "brickHitsRemaining": 3,
                     "ballRadius": 3.375,
-                    "ballSpeed": 16
+                    "ballSpeed": 16,
+                    "backgroundImage": "resources/images/brutal.png"
                 }}
+
+            # level properties
+            self.__infoZoneHeight = 75
+            self.__paddleAreaHeight = 200
+            self.levelZoneInfo = Engine.GUI.RectWithEdges(pygame.Rect(0, self.windowHeight - self.__infoZoneHeight, self.windowWidth, self.__infoZoneHeight)) #{"x": 0, "y": self.windowHeight - self.__infoZoneHeight, "width": self.windowWidth, "height": self.__infoZoneHeight}
+            self.levelZoneGamePlay = {"x": 0, "y": 0, "width": self.windowWidth, "height": self.windowHeight - self.levelZoneInfo.rect.height}
+            self.levelZonePaddleArea = {"x": 0, "y": self.levelZoneGamePlay["height"] - self.__paddleAreaHeight, "width": self.windowWidth, "height": self.__paddleAreaHeight}
+            self.levelBackgroundImage = self.difficulty[self.difficultyValue]["backgroundImage"]
+            self.levelSoundAmbient = "resources/sounds/fantomenk_560407_a_tiny_spaceships_final_mission.ogg"
+            self.levelCompleteSoundAmbient = "resources/sounds/mike_koenig_215222688_10_second_applause.ogg"
+
+            # Main Layer properties
+            self.backgroundImage = "resources/images/backdrop.png"
+            self.soundAmbient = "resources/sounds/fantomenk_532501_cold_war_game_theme_song.ogg"
 
             # Mouse / Keyboard(?) sensitivity
             sensitivities = []
@@ -100,6 +123,8 @@ class Engine():
             self.brickHeight = self.brickSize * self.brickWidthHeightRatio["height"]
             self.brickBorderWidth = 2
             self.brickHitsRemaining = self.difficulty[self.difficultyValue]["brickHitsRemaining"]
+            self.soundBrickHit = "resources/sounds/vladimir_719669812_neck_snap.ogg"
+            self.soundBrickDestroyed = "resources/sounds/mike_koenig_1123041125_crumbling.ogg"
 
             # ball properties
             self.ballSpeed = self.difficulty[self.difficultyValue]["ballSpeed"]
@@ -108,6 +133,7 @@ class Engine():
             self.ballGyreDirection = 180
             self.ballColor = Engine.Colors.BRIGHT_RED
             self.ballInitialPosition = ((self.levelZonePaddleArea["x"] + self.levelZonePaddleArea["width"]) / 2, self.levelZonePaddleArea["y"] + (self.ballRadius * 3))
+            self.soundBallBounce = "resources/sounds/mark_diangelo_79054334_blop.ogg"
 
             # paddle properties
             self.paddleWidth = self.difficulty[self.difficultyValue]["paddleWidth"]
@@ -284,10 +310,10 @@ class Engine():
                 pygame.sprite.Sprite.kill(self)
 
             def addListeners(self):
-                pass
+                pass #print("Abstract Method: addListeners; not implemented.")
 
             def notify(self, event):
-                print("Abstract Class not implemented. Triggering event:", event.name)
+                print("Abstract Method: notify; not implemented. Triggering event:", event.name)
 
     class Layer():
         def __init__(self, fillColor = None, mouseVisible = True):
@@ -304,11 +330,18 @@ class Engine():
             self.background = pygame.Surface(self.eventManager.game.options.windowSize)
             self.setFillColor(fillColor)
 
+            self.soundAmbient = None
+            self.soundAmbientStartAt = 0
+            self.soundVolumeAmbient = self.eventManager.game.options.soundVolumeAmbient
+
         def setFillColor(self, fillColor):
             self.fillColor = fillColor if fillColor != None else self.eventManager.game.Colors.WHITE
 
             self.background.fill(self.fillColor)
             self.background.set_alpha(self.fillColor.a)
+
+        def setBackgroundImage(self, image):
+            self.background = pygame.image.load(image).convert()
 
         def addWidget(self, widget):
             self.widgets.add(widget)
@@ -319,6 +352,8 @@ class Engine():
 
         def removeListeners(self):
             for widget in self.widgets:
+                #if hasattr(widget, "text"):
+                    #print("Removing listeners for", widget.text)
                 self.eventManager.removeListeners(widget)
 
         def removeWidget(self, widget):
@@ -344,11 +379,15 @@ class Engine():
             super().__init__(fillColor, mouseVisible)
 
             self.ballsRemaining = self.eventManager.game.options.ballsRemaining
+            self.score = 0
 
         def addListeners(self):
             super().addListeners()
 
             event = Events.StatUpdateEvent()
+            self.eventManager.addListener(event, self)
+
+            event = Events.LowerVolumeEvent()
             self.eventManager.addListener(event, self)
 
         def removeListeners(self):
@@ -357,6 +396,11 @@ class Engine():
             self.eventManager.removeListeners(self)
 
         def notify(self, event):
+            from brick import Brick # delayed import to prevent circular loading
+
+            if isinstance(event, Events.LowerVolumeEvent):
+                pygame.mixer.music.set_volume(0.2)
+
             if isinstance(event, Events.StatUpdateEvent):
                 if event.stat == Engine.Stats.BALLS_REMAINING:
                     self.ballsRemaining += event.value
@@ -365,12 +409,26 @@ class Engine():
                         event = Events.GameOverEvent()
                         self.eventManager.post(event)
 
+                if event.stat == Engine.Stats.SCORE:
+                    bricksRemaining = self.getWidgets(Brick)
+                    if len(bricksRemaining) == 0:
+                        event = Events.LevelCompleteEvent()
+                        self.eventManager.post(event)
+
     class Ticker():
         def __init__(self, engine):
             self.eventManager = EventManager()
             self.engine = self.eventManager.game
+            self.counter = 0
+            self.countdown = False
 
             event = Events.TickEvent()
+            self.eventManager.addListener(event, self)
+
+            event = Events.NewGameEvent()
+            self.eventManager.addListener(event, self)
+
+            event = Events.UnpauseGameEvent()
             self.eventManager.addListener(event, self)
 
             event = Events.QuitEvent()
@@ -385,6 +443,18 @@ class Engine():
                 self.engine.redrawWindow() #redraw sprites
                 self.eventManager.game.sleep() # CRITICAL: sleep for the minimum amount of time. DO NOT REMOVE THIS LINE
                 pygame.display.update() #redraw screen
+
+                if self.countdown:
+                    self.counter -= 1
+                    if self.counter == 0:
+                        self.countdown = False
+
+                        event = Events.LowerVolumeEvent()
+                        self.eventManager.post(event)
+
+            if isinstance(event, Events.NewGameEvent) or isinstance(event, Events.UnpauseGameEvent):
+                self.counter = 240
+                self.countdown = True
 
     def sleep(self, time = 0):
         pygame.time.wait(time)
@@ -407,41 +477,55 @@ class Engine():
         self.options.brickHitsRemaining = self.options.difficulty[self.options.difficultyValue]["brickHitsRemaining"]
         self.options.ballSpeed = self.options.difficulty[self.options.difficultyValue]["ballSpeed"]
         self.options.ballRadius = self.options.difficulty[self.options.difficultyValue]["ballRadius"]
+        self.options.levelBackgroundImage = self.options.difficulty[self.options.difficultyValue]["backgroundImage"]
 
         # ball size has probably changed, update the bounds for the paddle
         self.options.paddleLeftBound = self.options.ballRadius / 2
         self.options.paddleRightBound = self.options.paddleLeftBound
 
+        # update sounds, does nothing as of yet
+        self.options.soundPlayAmbient = self.options.soundPlayAmbient
+        self.options.soundPlayBrickHit = self.options.soundPlayBrickHit
+        self.options.soundPlayBrickDestroyed = self.options.soundPlayBrickDestroyed
+        self.options.soundPlayBallBounce = self.options.soundPlayBallBounce
+
+        self.options.soundVolumeBallBounce = self.options.soundVolumeBallBounce
+        self.options.soundVolumeBrickDestroyed = self.options.soundVolumeBrickDestroyed
+        self.options.soundVolumeBrickHit = self.options.soundVolumeBrickHit
+        self.options.soundVolumeAmbient = self.options.soundVolumeAmbient
+
+
         if self.screens:
-            if self.screens["level"]:
+            if "level" in self.screens.keys():
                 screen = self.screens["level"]
+                screen.setBackgroundImage(self.options.levelBackgroundImage)
 
-            balls = screen.getWidgets(Ball)
-            for ball in balls:
-                ball.speed = self.options.ballSpeed
-                ball.radius = self.options.ballRadius
+                balls = screen.getWidgets(Ball)
+                for ball in balls:
+                    ball.speed = self.options.ballSpeed
+                    ball.radius = self.options.ballRadius
 
-            paddles = screen.getWidgets(Paddle)
-            for paddle in paddles:
-                paddle.sensitivity = self.options.sensitivityValue
-                paddle.width = self.options.paddleWidth
+                paddles = screen.getWidgets(Paddle)
+                for paddle in paddles:
+                    paddle.sensitivity = self.options.sensitivityValue
+                    paddle.width = self.options.paddleWidth
 
-            oldBrickHitsRemaining = self.options.difficulty[oldDifficulty]["brickHitsRemaining"]
-            bricks = screen.getWidgets(Brick)
-            for brick in bricks:
-                # update hitsRemaining as needed
-                differenceInHitsRemaining = oldBrickHitsRemaining - brick.hitsRemaining
-                if differenceInHitsRemaining == 0:
-                    # hits remaining should be new max hits remaining
-                    brick.hitsRemaining = self.options.brickHitsRemaining
-                elif brick.hitsRemaining < 0:
-                    # brick should already be eliminated so...
-                    pass
-                else:
-                    # difference is non-zero and brick has hits remaining. adjust for new hits remaining.
-                    brick.hitsRemaining = self.options.brickHitsRemaining - differenceInHitsRemaining
+                oldBrickHitsRemaining = self.options.difficulty[oldDifficulty]["brickHitsRemaining"]
+                bricks = screen.getWidgets(Brick)
+                for brick in bricks:
+                    # update hitsRemaining as needed
+                    differenceInHitsRemaining = oldBrickHitsRemaining - brick.hitsRemaining
+                    if differenceInHitsRemaining == 0:
+                        # hits remaining should be new max hits remaining
+                        brick.hitsRemaining = self.options.brickHitsRemaining
+                    elif brick.hitsRemaining < 0:
+                        # brick should already be eliminated so...
+                        pass
+                    else:
+                        # difference is non-zero and brick has hits remaining. adjust for new hits remaining.
+                        brick.hitsRemaining = self.options.brickHitsRemaining - differenceInHitsRemaining
 
-                brick.animate()
+                    brick.animate()
 
             #ensure parity between both options screen and pause screen
             screens = ("options", "pause")
@@ -459,7 +543,6 @@ class Engine():
 
     def redrawWindow(self):
         screen = self.screens[self.activeScreen]
-##        self.window.fill(self.options.windowFillColor)
         screen.redraw(self.window)
 
     def end(self):
@@ -482,6 +565,14 @@ class Engine():
         self.sprites = pygame.sprite.Group()
         self.screens = {}
         self.activeScreen = ""
+
+        # ensure the sound mixer is available
+        if pygame.mixer.get_init() == None:
+            pygame.mixer.init()
+
+        # set up sound channels
+        pygame.mixer.set_num_channels(self.options.soundNumberOfChannels)
+        self.soundAmbientChannel = pygame.mixer.Channel(self.options.soundAmbientChannelNumber)
 
         #Create a window and start a clock
         pygame.init()

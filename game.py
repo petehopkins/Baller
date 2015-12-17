@@ -42,6 +42,9 @@ class Game(Engine):
         event = Events.PauseGameEvent()
         self.eventManager.addListener(event, self)
 
+        event = Events.UnpauseGameEvent()
+        self.eventManager.addListener(event, self)
+
         event = Events.GameOverEvent()
         self.eventManager.addListener(event, self)
 
@@ -66,8 +69,8 @@ class Game(Engine):
         screen.soundAmbientStartAt = 103
         screen.soundVolumeAmbient = 0.75
 
-        #wall = Brick((400, 300)) # use for quick testing
-        wall = Brick.createWall(self.options)
+        wall = Brick((400, 300)) # use for quick testing
+        #wall = Brick.createWall(self.options)
         screen.addWidget(wall)
 
         ball = Ball(screen)
@@ -299,6 +302,10 @@ class Game(Engine):
                 self.showScreen("pause")
 
         if isinstance(event, Events.GameOverEvent):
+            # reset stats to defaults
+            self.options.ballsRemaining = self.defaults.ballsRemaining
+            self.options.score = self.defaults.score
+
             self.showScreen("game_over")
 
         if isinstance(event, Events.LevelCompleteEvent):
@@ -307,7 +314,16 @@ class Game(Engine):
             self.showScreen("level_complete")
 
         if isinstance(event, Events.ShowStartEvent):
+            # either it's the first run or user quit back to main, either way reset stats to defaults
+            self.options.ballsRemaining = self.defaults.ballsRemaining
+            self.options.score = self.defaults.score
+
             self.showScreen("start")
+
+        if isinstance(event, Events.UnpauseGameEvent):
+            level = self.screens["level"]
+            level.checkIfLevelComplete()
+            level.checkIfGameOver()
 
     @staticmethod
     def launch():

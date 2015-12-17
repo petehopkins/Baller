@@ -214,6 +214,7 @@ class Ball(Engine.GUI.Widget):
             for paddle in collidableObjects: # should only be one, but this allows for multiple paddles later if we want to do that sort of thing
                 self.bottomEdge(paddle.topEdge()) # always set the bottom edge of the ball to the top edge of the paddle
                 paddle.redirect(self) # set the new vector
+                self.soundBallBounce.play() # and play sound
 
     def move(self, distance, assureMovement = None):
         if assureMovement == None:

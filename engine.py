@@ -131,7 +131,7 @@ class Engine():
             self.ballRadius = self.difficulty[self.difficultyValue]["ballRadius"]
             self.ballVectorInitial = -45
             self.ballGyreDirection = 180
-            self.ballColor = Engine.Colors.BRIGHT_RED
+            self.ballColor = Engine.Colors.LAVENDER
             self.ballInitialPosition = ((self.levelZonePaddleArea["x"] + self.levelZonePaddleArea["width"]) / 2, self.levelZonePaddleArea["y"] + (self.ballRadius * 3))
             self.soundBallBounce = "resources/sounds/mark_diangelo_79054334_blop.ogg"
 
@@ -395,25 +395,30 @@ class Engine():
 
             self.eventManager.removeListeners(self)
 
-        def notify(self, event):
+        def checkIfGameOver(self):
+            if self.ballsRemaining < 0:
+                e = Events.GameOverEvent()
+                self.eventManager.post(e)
+
+        def checkIfLevelComplete(self):
             from brick import Brick # delayed import to prevent circular loading
 
+            bricksRemaining = self.getWidgets(Brick)
+            if len(bricksRemaining) == 0:
+                e = Events.LevelCompleteEvent()
+                self.eventManager.post(e)
+
+        def notify(self, event):
             if isinstance(event, Events.LowerVolumeEvent):
                 pygame.mixer.music.set_volume(0.2)
 
             if isinstance(event, Events.StatUpdateEvent):
                 if event.stat == Engine.Stats.BALLS_REMAINING:
                     self.ballsRemaining += event.value
-
-                    if self.ballsRemaining < 0:
-                        event = Events.GameOverEvent()
-                        self.eventManager.post(event)
+                    self.checkIfGameOver()
 
                 if event.stat == Engine.Stats.SCORE:
-                    bricksRemaining = self.getWidgets(Brick)
-                    if len(bricksRemaining) == 0:
-                        event = Events.LevelCompleteEvent()
-                        self.eventManager.post(event)
+                    self.checkIfLevelComplete()
 
     class Ticker():
         def __init__(self, engine):
@@ -519,7 +524,7 @@ class Engine():
                         # hits remaining should be new max hits remaining
                         brick.hitsRemaining = self.options.brickHitsRemaining
                     elif brick.hitsRemaining < 0:
-                        # brick should already be eliminated so...
+                        # brick should already be eliminated, so...
                         pass
                     else:
                         # difference is non-zero and brick has hits remaining. adjust for new hits remaining.

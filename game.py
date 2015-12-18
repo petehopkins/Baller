@@ -69,8 +69,7 @@ class Game(Engine):
         screen.soundAmbientStartAt = 103
         screen.soundVolumeAmbient = 0.75
 
-        wall = Brick((400, 300)) # use for quick testing
-        #wall = Brick.createWall(self.options)
+        wall = Brick.createWall(self.options)
         screen.addWidget(wall)
 
         ball = Ball(screen)
@@ -126,7 +125,7 @@ class Game(Engine):
         screen.addWidget(title)
 
         sensitivityLabel = Label("Sensitivity", self.Colors.BLACK)
-        sensitivityLabel.setPosition(50, 125)
+        sensitivityLabel.setPosition(50, 100)
         screen.addWidget(sensitivityLabel)
 
         sensitivity = SliderWidget("sensitivity", self.options.availableSensitivities, self.options.sensitivityValue)
@@ -134,12 +133,28 @@ class Game(Engine):
         screen.addWidget(sensitivity)
 
         difficultyLabel = Label("Difficulty", self.Colors.BLACK)
-        difficultyLabel.setPosition(50, 225)
+        difficultyLabel.setPosition(50, 200)
         screen.addWidget(difficultyLabel)
 
         difficulty = SliderWidget("difficulty", self.options.availableDifficulties, self.options.difficultyValue)
         difficulty.setPosition(530, difficultyLabel.rect.y + 20)
         screen.addWidget(difficulty)
+
+        volumeAmbientLabel = Label("Volume: Ambient", self.Colors.BLACK) #, fontSize = 36
+        volumeAmbientLabel.setPosition(50, 300)
+        screen.addWidget(volumeAmbientLabel)
+
+        volumeAmbient = SliderWidget("volumeAmbient", self.options.availableVolumes, self.options.defaultVolumeAmbient)
+        volumeAmbient.setPosition(530, volumeAmbientLabel.rect.y + 20)
+        screen.addWidget(volumeAmbient)
+
+        volumeEffectsLabel = Label("Volume: Effects", self.Colors.BLACK)
+        volumeEffectsLabel.setPosition(50, 400)
+        screen.addWidget(volumeEffectsLabel)
+
+        volumeEffects = SliderWidget("volumeEffects", self.options.availableVolumes, self.options.defaultVolumeEffects)
+        volumeEffects.setPosition(530, volumeEffectsLabel.rect.y + 20)
+        screen.addWidget(volumeEffects)
 
         action = self.postEvent(Events.ApplyOptionsEvent)
         saveButton = Button("Apply", buttonColor = self.Colors.LIGHT_GREY, onClickAction = action)
@@ -229,12 +244,8 @@ class Game(Engine):
 
         pygame.mouse.set_visible(screen.mouseVisible)
 
-        self.screens[self.activeScreen].activate()
-
-        if screen.soundAmbient != None:
-            pygame.mixer.music.load(screen.soundAmbient)
-            pygame.mixer.music.play(-1, start = screen.soundAmbientStartAt)
-            pygame.mixer.music.set_volume(screen.soundVolumeAmbient)
+        screen.activate()
+        screen.playAmbientAudio()
 
     def getCurrentStatValue(self, stat):
         if stat == self.Stats.BALLS_REMAINING:
@@ -270,7 +281,7 @@ class Game(Engine):
             for slider in sliders:
                 screen.widgetValues[slider.valueKey] = slider.value
 
-            self.applyOptions(screen.widgetValues["sensitivity"], screen.widgetValues["difficulty"])
+            self.applyOptions(screen.widgetValues["sensitivity"], screen.widgetValues["difficulty"], screen.widgetValues["volumeAmbient"], screen.widgetValues["volumeEffects"])
 
             if self.activeScreen == "pause":
                 event = Events.UnpauseGameEvent()

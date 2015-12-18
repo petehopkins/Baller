@@ -62,9 +62,17 @@ class Brick(Engine.GUI.Widget):
         rightBorder = options.brickWallWidth - borderSpace - options.brickWallMortarGap
         topBorder = options.brickWallMinimumOffset
 
+        if options.demoMode:
+            bricksWide = 4
+            bricksHigh = 1
+            leftBorder = 325
+            topBorder = 275
+
         for x in range(0, bricksWide):
             for y in range(0, bricksHigh):
-                position = [leftBorder + options.brickWallMortarGap + ((options.brickWidth + options.brickWallMortarGap) * x), topBorder + options.brickWallMortarGap + ((options.brickHeight + options.brickWallMortarGap) * y)]
+                posX = leftBorder + options.brickWallMortarGap + ((options.brickWidth + options.brickWallMortarGap) * x)
+                posY = topBorder + options.brickWallMortarGap + ((options.brickHeight + options.brickWallMortarGap) * y)
+                position = (posX, posY)
                 brick = Brick(position)
                 pile.add(brick)
 
@@ -104,7 +112,7 @@ class Brick(Engine.GUI.Widget):
         self.image.blit(self.inner, self.innerRect)
 
     def animate(self):
-        if 0 <= self.hitsRemaining < self.options.brickHitsRemaining:
+        if self.options.soundPlayBrickHit and 0 <= self.hitsRemaining < self.options.brickHitsRemaining:
             # play sound effect for a brick hit
             self.soundBrickHit.play()
 
@@ -123,7 +131,8 @@ class Brick(Engine.GUI.Widget):
         else:
             self.fill = Engine.Colors.BLACK
             self.removeFromPlay() # no hits remaining, get rid of this one
-            self.soundBrickDestroyed.play() # and play this effect instead
+            if self.options.soundPlayBrickDestroyed:
+                self.soundBrickDestroyed.play() # and play this effect as well
 
         self.redrawBrick()
 

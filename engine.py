@@ -18,6 +18,7 @@ class Engine():
 
     class Options():
         def __init__(self):
+            self.demoMode = False
             self.name = "Baller" #"Defeat the oppressive war machine of the evil Quadratic invaders!"
             self.backstory = '''
     From the depths of Outer Space comes the vile army of the extraterrestrial race known only as the Quadrilaterians.
@@ -35,14 +36,18 @@ class Engine():
             # sound properties
             self.soundNumberOfChannels = 8
             self.soundAmbientChannelNumber = 0
-            self.soundPlayAmbient = True
-            self.soundPlayBrickHit = True
-            self.soundPlayBrickDestroyed = True
-            self.soundPlayBallBounce = True
-            self.soundVolumeAmbient = 1
-            self.soundVolumeBrickHit = 1
-            self.soundVolumeBrickDestroyed = 1
-            self.soundVolumeBallBounce = 1
+            self.availableVolumes = [(str(x), (x / 100)) for x in range(0, 101)]
+            self.defaultVolumeAmbient = "100"
+            self.defaultVolumeEffects = "100"
+            self.soundVolumeAmbient = self.availableVolumes[len(self.availableVolumes) - 1][1]
+            self.soundVolumeEffects = self.availableVolumes[len(self.availableVolumes) - 1][1]
+            self.soundVolumeBrickHit = self.soundVolumeEffects
+            self.soundVolumeBrickDestroyed = self.soundVolumeEffects
+            self.soundVolumeBallBounce = self.soundVolumeEffects
+            self.soundPlayAmbient = self.soundVolumeAmbient != 0
+            self.soundPlayBrickHit = self.soundVolumeEffects != 0
+            self.soundPlayBrickDestroyed = self.soundVolumeEffects != 0
+            self.soundPlayBallBounce = self.soundVolumeEffects != 0
 
             # window properties
             self.windowWidth = 800
@@ -343,6 +348,20 @@ class Engine():
         def setBackgroundImage(self, image):
             self.background = pygame.image.load(image).convert()
 
+        def playAmbientAudio(self):
+            if self.eventManager.game.options.soundPlayAmbient and self.soundAmbient != None:
+                pygame.mixer.music.load(self.soundAmbient)
+                pygame.mixer.music.play(-1, start = self.soundAmbientStartAt)
+
+        def stopAmbientAudio(self):
+            pygame.mixer.music.stop()
+
+        def setAmbientVolume(self, volume):
+            self.soundVolumeAmbient = volume
+            pygame.mixer.music.set_volume(self.soundVolumeAmbient)
+            if volume == 0:
+                self.stopAmbientAudio()
+
         def addWidget(self, widget):
             self.widgets.add(widget)
 
@@ -410,7 +429,7 @@ class Engine():
 
         def notify(self, event):
             if isinstance(event, Events.LowerVolumeEvent):
-                pygame.mixer.music.set_volume(0.2)
+                self.setAmbientVolume(0.2)
 
             if isinstance(event, Events.StatUpdateEvent):
                 if event.stat == Engine.Stats.BALLS_REMAINING:
@@ -455,7 +474,7 @@ class Engine():
                         self.countdown = False
 
                         event = Events.LowerVolumeEvent()
-                        self.eventManager.post(event)
+                        #self.eventManager.post(event) # Not sure we still want to do this with actual volume controls now available
 
             if isinstance(event, Events.NewGameEvent) or isinstance(event, Events.UnpauseGameEvent):
                 self.counter = 240
@@ -464,7 +483,7 @@ class Engine():
     def sleep(self, time = 0):
         pygame.time.wait(time)
 
-    def applyOptions(self, newSensitivity, newDifficulty):
+    def applyOptions(self, newSensitivity, newDifficulty, newVolumeAmbient, newVolumeEffects):
         from ball import Ball
         from paddle import Paddle
         from brick import Brick
@@ -489,16 +508,21 @@ class Engine():
         self.options.paddleRightBound = self.options.paddleLeftBound
 
         # update sounds, does nothing as of yet
-        self.options.soundPlayAmbient = self.options.soundPlayAmbient
-        self.options.soundPlayBrickHit = self.options.soundPlayBrickHit
-        self.options.soundPlayBrickDestroyed = self.options.soundPlayBrickDestroyed
-        self.options.soundPlayBallBounce = self.options.soundPlayBallBounce
+        self.options.soundVolumeAmbient = newVolumeAmbient
+        self.options.soundVolumeEffects = newVolumeEffects
+        self.options.soundVolumeBallBounce = self.options.soundVolumeEffects
+        self.options.soundVolumeBrickDestroyed = self.options.soundVolumeEffects
+        self.options.soundVolumeBrickHit = self.options.soundVolumeEffects
+
+        self.options.soundPlayAmbient = self.options.soundVolumeAmbient != 0
+        self.options.soundPlayBrickHit = self.options.soundVolumeEffects != 0
+        self.options.soundPlayBrickDestroyed = self.options.soundVolumeEffects != 0
+        self.options.soundPlayBallBounce = self.options.soundVolumeEffects != 0
 
         self.options.soundVolumeBallBounce = self.options.soundVolumeBallBounce
         self.options.soundVolumeBrickDestroyed = self.options.soundVolumeBrickDestroyed
         self.options.soundVolumeBrickHit = self.options.soundVolumeBrickHit
         self.options.soundVolumeAmbient = self.options.soundVolumeAmbient
-
 
         if self.screens:
             if "level" in self.screens.keys():
@@ -545,6 +569,16 @@ class Engine():
 
                         if slider.valueKey == "difficulty":
                             slider.setValue(self.options.difficultyValue)
+
+                        if slider.valueKey == "volumeAmbient":
+                            slider.setValue(self.options.soundVolumeAmbient)
+
+                        if slider.valueKey == "volumeEffects":
+                            slider.setValue(self.options.soundVolumeEffects)
+
+            # ensure volume is changed
+            for s in self.screens:
+                self.screens[s].setAmbientVolume(self.options.soundVolumeAmbient)
 
     def redrawWindow(self):
         screen = self.screens[self.activeScreen]
